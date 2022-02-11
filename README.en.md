@@ -1,7 +1,7 @@
 # JavaUtils
 
 #### Description
-Java工具使用
+Java常用工具类
 
 #### Software Architecture
 Software architecture description
