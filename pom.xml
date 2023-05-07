@@ -11,5 +11,6 @@
     <modules>
         <module>json-utils</module>
         <module>xml-utils</module>
+        <module>security-utils</module>
     </modules>
 </project>
