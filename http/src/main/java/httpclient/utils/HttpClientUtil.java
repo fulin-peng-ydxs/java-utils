@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -15,7 +16,9 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
+import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -156,7 +159,7 @@ public abstract class HttpClientUtil {
      */
     public static <T> T executeUpload(String url, InputStream inputStream,Map<String,String> headers,Class<T> targetType,
                                       String targetName,String statusName, String statusValue, String errorName, String fileName) throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+        try (CloseableHttpClient httpClient = createHttpClient(false)) {
             HttpPost httpPost = new HttpPost(url);
             //设置请求头
             if(headers!=null){
@@ -208,15 +211,14 @@ public abstract class HttpClientUtil {
     /**
      * 响应解析
      * 2023/10/16 00:25
-     * @throws RuntimeException
+     * @throws RuntimeException 如果响应状态不为200，则抛出响应信息
      * @author pengshuaifeng
      */
-    private static <T> T abstractResponse(String responseJson,Class<T> targetType, String targetName, String statusName, String statusValue, String errorName)
-            throws Exception{
+    private static <T> T abstractResponse(String responseJson,Class<T> targetType, String targetName, String statusName, String statusValue, String errorName) {
         Map<String,Object> result = (Map<String,Object>)JsonUtils.getObject(responseJson, Map.class);
         String resStatus = (String) result.get(statusName);
         if(resStatus==null|| resStatus.isEmpty())
-            throw new Exception("响应状态缺失："+responseJson);
+            throw new RuntimeException("响应状态缺失："+responseJson);
         else if(!resStatus.equals(statusValue)){
             String error =(String) result.get(errorName);
             throw new RuntimeException("请求失败："+error);
@@ -225,7 +227,7 @@ public abstract class HttpClientUtil {
             return JsonUtils.getObject(responseJson,targetType);
         Object resData =result.get(targetName);
         if(resData==null)
-            throw new Exception("响应数据缺失或为空："+responseJson);
+            throw new RuntimeException("响应数据缺失或为空："+responseJson);
         return JsonUtils.getObject(resData,targetType);
     }
 
@@ -234,6 +236,30 @@ public abstract class HttpClientUtil {
      * 2023/10/16 00:10
      * @author pengshuaifeng
      */
+
+
+    /**
+     * 创建HttpClient
+     * 2023/10/18 01:45
+     * @param ignoreSSl 忽略证书，用于https协议不安全调用
+     * @author pengshuaifeng
+     */
+    public static CloseableHttpClient createHttpClient(boolean ignoreSSl) throws Exception{
+        if(ignoreSSl){
+            // 创建不验证证书的 SSL 上下文
+            SSLContext sslContext = SSLContextBuilder.create()
+                    .loadTrustMaterial((chain, authType) -> true)
+                    .build();
+            // 创建 HttpClient，并禁用 SSL 验证
+            return HttpClients.custom()
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                    .build();
+        }else{
+            return HttpClients.createDefault();
+        }
+    }
+
 
     /**
      * 请求类型
