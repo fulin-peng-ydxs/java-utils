@@ -204,6 +204,7 @@ public abstract class HttpClientUtil {
         //否则，根据响应提供信息进一步解析响应信息
         return abstractResponse(responseJson,targetType,targetName,statusName,statusValue,errorName);
     }
+
     /**
      * 响应解析
      * 2023/10/16 00:25
@@ -239,7 +240,7 @@ public abstract class HttpClientUtil {
      * 2023/10/15 22:41
      * @author pengshuaifeng
      */
-    public static enum RequestType{
+    public enum RequestType{
         GET,
         POST,
         DELETE,
