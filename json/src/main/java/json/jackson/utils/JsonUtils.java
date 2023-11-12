@@ -3,12 +3,14 @@ package json.jackson.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 	json的工具类	
@@ -69,11 +71,11 @@ public abstract class JsonUtils {
 	}
 
 	/**
-	 * json-反序列化:string-list
-	 * @author fulin peng
-	 * 2023/8/3 0003 12:08
+	 * json-反序列化：string-map
+	 * 2023/11/13 00:12
+	 * @author pengshuaifeng
 	 */
-	public static <T> List<T> getObjects(String str, TypeReference<List<T>> type){
+	public static <K,V> Map<K,V> getMap(String str, TypeReference<Map<K,V>> type){
 		try {
 			return getMapper(true).readValue(str,type);
 		} catch (Exception e) {
@@ -81,6 +83,32 @@ public abstract class JsonUtils {
 		}
 	}
 
+
+	/**
+	 * json-反序列化:string-list
+	 * @author fulin peng
+	 * 2023/8/3 0003 12:08
+	 */
+	public static <T> List<T> getList(String str, TypeReference<List<T>> type){
+		try {
+			return getMapper(true).readValue(str,type);
+		} catch (Exception e) {
+			throw new RuntimeException("json-序列化异常",e);
+		}
+	}
+
+	/**
+	 * json-反序列化：string-object-params
+	 * 2023/11/13 00:22
+	 * @author pengshuaifeng
+	 */
+	public static <T> T getObjectParams(String str, Class<T> valueType,JavaType type){
+		try {
+			return getMapper(true).readValue(str,type);
+		} catch (Exception e) {
+			throw new RuntimeException("json-序列化异常",e);
+		}
+	}
 
 	/**
 	 * json-反序列化:stream-object
@@ -96,14 +124,36 @@ public abstract class JsonUtils {
 	}
 
 	/**
+	 * json-反序列化：stream-map
+	 * 2023/11/13 00:13
+	 * @author pengshuaifeng
+	 */
+	public static <K,V> Map<K,V> getMap(InputStream stream,TypeReference<Map<K,V>> type){
+		try {
+			return getMapper(true).readValue(stream,type);
+		} catch (Exception e) {
+			throw new RuntimeException("json-序列化异常",e);
+		}
+	}
+
+
+	/**
 	 * json-反序列化-stream-list
 	 * @author fulin peng
 	 * 2023/8/3 0003 12:10
 	 */
-	public static <T> List<T> getObjects(InputStream stream,TypeReference<List<T>> type) {
+	public static <T> List<T> getList(InputStream stream,TypeReference<List<T>> type) {
 		try {
 			return getMapper(true).readValue(stream,type);
 		} catch (IOException e) {
+			throw new RuntimeException("json-序列化异常",e);
+		}
+	}
+
+	public static <T> T getObjectParams(InputStream stream, Class<T> valueType, JavaType type){
+		try {
+			return getMapper(true).readValue(stream,type);
+		} catch (Exception e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
 	}
