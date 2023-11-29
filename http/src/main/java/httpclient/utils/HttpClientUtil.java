@@ -3,7 +3,9 @@ package httpclient.utils;
 import json.jackson.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -14,13 +16,16 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 /**
  * httpclient调用工具类
@@ -30,6 +35,8 @@ import java.util.Map;
  */
 @Slf4j
 public abstract class HttpClientUtil {
+
+    private static final String UrlEncodedFormType="application/x-www-form-urlencoded";
 
 
     /**通用请求执行
@@ -47,7 +54,7 @@ public abstract class HttpClientUtil {
      */
     public static  <T> T execute(RequestType requestType, String url, Map<String,Object> params,Map<String,String> headers, Class<T> targetType,
                                  String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+        try (CloseableHttpClient httpClient = createHttpClient(false)) {
             return execute(httpClient,requestType,url,params,headers,targetType,targetName,statusName,statusValue,errorName);
         }
     }
@@ -83,14 +90,33 @@ public abstract class HttpClientUtil {
             log.debug("HttpClient-Get调用服务：{}",url);
             httpRequest= new HttpGet(url);
         }else{ //POST&其他请求
-            String paramJson = JsonUtils.getString(params);
-            log.debug("HttpClient-Post调用服务：url:{},params:{}",url,paramJson);
+            String contentType =null;
+            boolean isJson=true;
+            if(headers!=null) {
+                 contentType = headers.get("Content-Type");
+                if (contentType!=null && contentType.equals(UrlEncodedFormType))
+                    isJson=false;
+            }
             HttpPost httpPost= new HttpPost(url);
-            httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
             httpRequest= httpPost;
+            if(isJson) {
+                String paramJson = JsonUtils.getString(params);
+                log.debug("HttpClient-Post(Json)调用服务：url:{},params:{}",url,paramJson);
+                httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
+                //设置请求头
+                httpPost.setHeader("Content-Type","application/json");
+            }else {
+                if (contentType.equals(UrlEncodedFormType)) {  //url编码表单处理
+                    // 添加请求参数
+                    List<NameValuePair> urlParameters = new ArrayList<>();
+                    params.forEach((key,value)->{
+                        urlParameters.add(new BasicNameValuePair(key, value.toString()));
+                    });
+                    log.debug("HttpClient-Post(UrlEncodedForm)调用服务：url:{},params:{}",url,urlParameters);
+                    httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
+                }
+            }
         }
-        //设置请求头
-        httpRequest.setHeader("Content-Type","application/json");
         if(headers!=null){
             for (Map.Entry<String,String> headersEntry : headers.entrySet()) {
                 httpRequest.setHeader(headersEntry.getKey(),headersEntry.getValue());
@@ -189,6 +215,26 @@ public abstract class HttpClientUtil {
         }
     }
 
+    /**
+     * 多部分请求
+     * 2023/11/28 0028 11:05
+     * @author fulin-peng
+     */
+
+
+    /**
+     * url编码表单请求
+     * 2023/11/28 0028 11:05
+     * @author fulin-peng
+     */
+    public static <T> T executeUrlEncodedForm(String url,RequestType requestType, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+                                              String targetName,String statusName, String statusValue, String errorName) throws Exception {
+        if(headers==null)
+            headers= new HashMap<>();
+        headers.put("Content-Type",UrlEncodedFormType);
+        return execute(requestType, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
+    }
+
     /**响应解析
      * 2023/6/15 0015-15:09
      * @throws RuntimeException 如果响应状态不为200，则抛出响应信息
@@ -215,11 +261,11 @@ public abstract class HttpClientUtil {
      * @author pengshuaifeng
      */
     private static <T> T abstractResponse(String responseJson,Class<T> targetType, String targetName, String statusName, String statusValue, String errorName) {
-        Map<String,Object> result = (Map<String,Object>)JsonUtils.getObject(responseJson, Map.class);
-        String resStatus = (String) result.get(statusName);
-        if(resStatus==null|| resStatus.isEmpty())
+        Map<?,?> result = (Map<?,?>)JsonUtils.getObject(responseJson, Map.class);
+        Object resStatus = result.get(statusName);
+        if(resStatus==null|| resStatus.toString().isEmpty())
             throw new RuntimeException("响应状态缺失："+responseJson);
-        else if(!resStatus.equals(statusValue)){
+        else if(!resStatus.toString().equals(statusValue)){
             String error =(String) result.get(errorName);
             throw new RuntimeException("请求失败："+error);
         }
@@ -268,8 +314,6 @@ public abstract class HttpClientUtil {
      */
     public enum RequestType{
         GET,
-        POST,
-        DELETE,
-        PUT
+        POST
     }
 }
