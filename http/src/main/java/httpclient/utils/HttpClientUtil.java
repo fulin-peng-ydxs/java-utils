@@ -36,9 +36,6 @@ import java.util.Map;
 @Slf4j
 public abstract class HttpClientUtil {
 
-    private static final String UrlEncodedFormType="application/x-www-form-urlencoded";
-
-
     /**通用请求执行
      * 2023/6/15 0015-14:53
      * @author pengfulin
@@ -91,22 +88,11 @@ public abstract class HttpClientUtil {
             httpRequest= new HttpGet(url);
         }else{ //POST&其他请求
             String contentType =null;
-            boolean isJson=true;
-            if(headers!=null) {
-                 contentType = headers.get("Content-Type");
-                if (contentType!=null && contentType.equals(UrlEncodedFormType))
-                    isJson=false;
-            }
+            boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.equals(RequestDataType.APPLICATION_JSON.value);
             HttpPost httpPost= new HttpPost(url);
             httpRequest= httpPost;
-            if(isJson) {
-                String paramJson = JsonUtils.getString(params);
-                log.debug("HttpClient-Post(Json)调用服务：url:{},params:{}",url,paramJson);
-                httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
-                //设置请求头
-                httpPost.setHeader("Content-Type","application/json");
-            }else {
-                if (contentType.equals(UrlEncodedFormType)) {  //url编码表单处理
+            if(isNotJson) {
+                if (contentType.equals(RequestDataType.URL_ENCODED_FORM.value)) {  //url编码表单处理
                     // 添加请求参数
                     List<NameValuePair> urlParameters = new ArrayList<>();
                     params.forEach((key,value)->{
@@ -115,6 +101,12 @@ public abstract class HttpClientUtil {
                     log.debug("HttpClient-Post(UrlEncodedForm)调用服务：url:{},params:{}",url,urlParameters);
                     httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
                 }
+            }else {
+                String paramJson = JsonUtils.getString(params);
+                log.debug("HttpClient-Post(Json)调用服务：url:{},params:{}",url,paramJson);
+                httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
+                //设置请求头
+                httpPost.setHeader("Content-Type","application/json");
             }
         }
         if(headers!=null){
@@ -148,6 +140,20 @@ public abstract class HttpClientUtil {
                                     String targetName, String statusName, String statusValue, String errorName) throws Exception {
         return execute(RequestType.POST, url, params, headers,targetType,targetName, statusName, statusValue, errorName);
     }
+
+    /**
+     * url编码表单请求
+     * 2023/11/28 0028 11:05
+     * @author fulin-peng
+     */
+    public static <T> T executeUrlEncodedForm(String url,RequestType requestType, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+                                              String targetName,String statusName, String statusValue, String errorName) throws Exception {
+        if(headers==null)
+            headers= new HashMap<>();
+        headers.put("Content-Type",RequestDataType.URL_ENCODED_FORM.value);
+        return execute(requestType, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
+    }
+
 
     /**
      * Get请求执行
@@ -220,20 +226,6 @@ public abstract class HttpClientUtil {
      * 2023/11/28 0028 11:05
      * @author fulin-peng
      */
-
-
-    /**
-     * url编码表单请求
-     * 2023/11/28 0028 11:05
-     * @author fulin-peng
-     */
-    public static <T> T executeUrlEncodedForm(String url,RequestType requestType, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                              String targetName,String statusName, String statusValue, String errorName) throws Exception {
-        if(headers==null)
-            headers= new HashMap<>();
-        headers.put("Content-Type",UrlEncodedFormType);
-        return execute(requestType, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
-    }
 
     /**响应解析
      * 2023/6/15 0015-15:09
@@ -316,4 +308,23 @@ public abstract class HttpClientUtil {
         GET,
         POST
     }
+
+    /**
+     * 请求数据类型
+     * 2023/12/11 00:17
+     * @author pengshuaifeng
+     */
+    public enum RequestDataType {
+
+        URL_ENCODED_FORM("application/x-www-form-urlencoded"),
+
+        APPLICATION_JSON("application/json");
+
+        public final String value;
+
+        RequestDataType(String value) {
+            this.value = value;
+        }
+    }
+
 }
