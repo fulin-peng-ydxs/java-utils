@@ -1,6 +1,6 @@
-package common.tree;
+package basic.tree;
 
-import common.clazz.ClassUtil;
+import basic.clazz.ClassUtil;
 import java.util.*;
 
 /**

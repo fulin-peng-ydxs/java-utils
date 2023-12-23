@@ -13,7 +13,7 @@
         <module>xml</module>
         <module>security</module>
         <module>http</module>
-        <module>common</module>
+        <module>basic</module>
     </modules>
 
     <properties>

@@ -1,4 +1,4 @@
-package common.clazz;
+package basic.clazz;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -74,5 +74,17 @@ public class ClassUtil {
      */
     public static <A extends Annotation> A getFieldAnnotation(Field field, Class<A> annotationType){
         return field.getAnnotation(annotationType);
+    }
+
+
+    /**
+     * 获取枚举对象
+     * @param enumType 枚举的class对象
+     * @param enumValue 枚举值的字符串
+     * 2023/12/23 17:10
+     * @author pengshuaifeng
+     */
+    public static  <T extends Enum<T>> T getEnum(Class<T> enumType, String enumValue){
+        return Enum.valueOf(enumType,enumValue);
     }
 }
