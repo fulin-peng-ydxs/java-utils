@@ -146,12 +146,12 @@ public abstract class HttpClientUtil {
      * 2023/11/28 0028 11:05
      * @author fulin-peng
      */
-    public static <T> T executeUrlEncodedForm(String url,RequestType requestType, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+    public static <T> T executeUrlEncodedForm(String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
                                               String targetName,String statusName, String statusValue, String errorName) throws Exception {
         if(headers==null)
             headers= new HashMap<>();
         headers.put("Content-Type",RequestDataType.URL_ENCODED_FORM.value);
-        return execute(requestType, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
+        return execute(RequestType.POST, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
     }
 
 
