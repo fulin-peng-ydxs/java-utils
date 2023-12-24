@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -87,4 +88,38 @@ public class ClassUtil {
     public static  <T extends Enum<T>> T getEnum(Class<T> enumType, String enumValue){
         return Enum.valueOf(enumType,enumValue);
     }
+
+    /**
+     * 查找属性
+     * @param clazz 类对象
+     * @param  needSupper 是否需要包含父对象
+     * @param  fields 属性集合
+     * 2023/12/24 22:54
+     * @author pengshuaifeng
+     */
+    public static List<Field> getSupperClassFields(Class<?> clazz,boolean needSupper,List<Field> fields){
+        if(fields==null)
+            fields=new LinkedList<>();
+        if(clazz!=Object.class){
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            Class<?> superclass = clazz.getSuperclass();
+            if (superclass!=Object.class && needSupper) {
+                return getSupperClassFields(superclass,true,fields);
+            }
+        }
+        return fields;
+    }
+
+    /**
+     * 类型是否一致
+     * @param clazz1 同类或子类
+     * @param clazz2 同类或父类
+     * 2023/12/24 23:20
+     * @author pengshuaifeng
+     */
+    public static boolean typeEquals(Class<?> clazz1,Class<?> clazz2){
+        return clazz1 == clazz2 || clazz2.isAssignableFrom(clazz1);
+    }
+
+
 }
