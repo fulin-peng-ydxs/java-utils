@@ -68,15 +68,6 @@ public class ClassUtil {
         }
     }
 
-    /**
-     * 获取字段指定注解
-     * 2023/11/30 0030 14:40
-     * @author fulin-peng
-     */
-    public static <A extends Annotation> A getFieldAnnotation(Field field, Class<A> annotationType){
-        return field.getAnnotation(annotationType);
-    }
-
 
     /**
      * 获取枚举对象
