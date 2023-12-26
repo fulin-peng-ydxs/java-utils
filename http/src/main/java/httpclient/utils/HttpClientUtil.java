@@ -237,7 +237,7 @@ public abstract class HttpClientUtil {
         String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
         log.debug("HttpClient调用结果：{}",responseJson);
         int statusCode = response.getStatusLine().getStatusCode();
-        if(statusCode!=200)
+        if(statusCode==500)
             throw new RuntimeException("远程服务调用异常："+responseJson);
         //如果targetName&statusName均为空，则直接将响应结果转换成targetType类型直接返回
         if(targetName==null&&statusName==null)
