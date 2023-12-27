@@ -1,6 +1,6 @@
 package basic.tree;
 
-import basic.clazz.ClassUtil;
+import basic.clazz.ClassUtils;
 import java.util.*;
 
 /**
@@ -9,7 +9,7 @@ import java.util.*;
  * @author fulin-peng
  * 2023-12-06  17:40
  */
-public class TreeUtil {
+public class TreeUtils {
 
     /**
      * 集合转树
@@ -19,7 +19,7 @@ public class TreeUtil {
     public static <R,K> List<R> toListTree(List<R> roots,List<R> sources,String idName,String pidName,Class<K> idType,String childrenName){
         Map<K,List<R>> sourceMap = new HashMap<>();
         for (R source : sources) {
-            K pidValue = ClassUtil.getFieldValue(pidName, source, idType);
+            K pidValue = ClassUtils.getFieldValue(pidName, source, idType);
             List<R> children = sourceMap.get(pidValue);
             if(children==null)
                 children=new LinkedList<>();
@@ -46,11 +46,11 @@ public class TreeUtil {
      */
     public static <R,K>  List<R>  mapConvertListTree(List<R> roots,Map<K,List<R>> sourceMap,String idName,String pidName,Class<K> idType,String childrenName){
         for (R root : roots) {
-            K idValue = ClassUtil.getFieldValue(idName, root, idType);
+            K idValue = ClassUtils.getFieldValue(idName, root, idType);
             List<R> children = sourceMap.get(idValue);
             if(children!=null)
                 mapConvertListTree(children,sourceMap,idName,pidName,idType,childrenName);
-            ClassUtil.setFieldValue(childrenName,children,root);
+            ClassUtils.setFieldValue(childrenName,children,root);
         }
         return roots;
     }

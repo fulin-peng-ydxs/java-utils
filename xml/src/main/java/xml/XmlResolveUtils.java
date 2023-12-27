@@ -17,7 +17,7 @@ import java.io.FileNotFoundException;
  * @author peng_fu_lin
  * 2022-10-10 15:21
  */
-public class XmlResolveUtil {
+public class XmlResolveUtils {
 
     /**解析xml-Dom元素
      * 2022/10/10 0010-15:18
@@ -26,7 +26,7 @@ public class XmlResolveUtil {
     public static Document getDom(String path) throws FileNotFoundException, DocumentException {
         InputStream inputStream=null;
         if(path.startsWith("classpath:"))
-            inputStream= XmlResolveUtil.class.getResourceAsStream(path.replace("classpath:", ""));
+            inputStream= XmlResolveUtils.class.getResourceAsStream(path.replace("classpath:", ""));
         else
             inputStream=new FileInputStream(path);
         SAXReader saxReader = new SAXReader(); //xml声明自定义

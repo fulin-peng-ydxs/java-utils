@@ -19,7 +19,7 @@ import java.util.Map;
  * 2023/12/27
  */
 @Slf4j
-public class DateUtil {
+public class DateUtils {
 
     //年度节假日数据
     private static Map<String, Map<String, List<String>>> holidayData;
@@ -27,7 +27,7 @@ public class DateUtil {
     //数据加载
     static {
         try {
-            InputStream resourceAsStream = DateUtil.class.getResourceAsStream("/calendar.json");
+            InputStream resourceAsStream = DateUtils.class.getResourceAsStream("/calendar.json");
             holidayData = JsonUtils.getMap(resourceAsStream, new TypeReference<Map<String, Map<String, List<String>>>>() {});
             if (resourceAsStream != null)
                 resourceAsStream.close();

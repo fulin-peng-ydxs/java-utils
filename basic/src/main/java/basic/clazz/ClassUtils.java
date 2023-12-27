@@ -13,7 +13,7 @@ import java.util.List;
  * author: pengshuaifeng
  * 2023/12/18
  */
-public class ClassUtil {
+public class ClassUtils {
 
     /**获取类的泛型
      * 2022/9/7 0007-15:17

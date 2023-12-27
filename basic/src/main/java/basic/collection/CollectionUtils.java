@@ -8,7 +8,7 @@ import java.util.*;
  * @author peng_fu_lin
  * 2022-09-07 15:55
  */
-public class CollectionUtil {
+public class CollectionUtils {
 
 
     /**是否为空

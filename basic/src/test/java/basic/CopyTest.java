@@ -1,7 +1,7 @@
 package basic;
 
 
-import basic.copy.ObjectCopyUtil;
+import basic.copy.ObjectCopyUtils;
 import basic.entity.User;
 import basic.entity.UserNew;
 import org.junit.Test;
@@ -22,8 +22,8 @@ public class CopyTest {
         user.setAge(77);
         user.setName("彭帅疯");
         UserNew targetNew = new UserNew();
-        ObjectCopyUtil.copy(user, targetNew, false);
-        ObjectCopyUtil.copy(user, targetNew, false,true);
+        ObjectCopyUtils.copy(user, targetNew, false);
+        ObjectCopyUtils.copy(user, targetNew, false,true);
         System.out.println(targetNew);
     }
 }

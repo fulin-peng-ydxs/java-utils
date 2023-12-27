@@ -1,7 +1,7 @@
 package basic.copy;
 
 
-import basic.clazz.ClassUtil;
+import basic.clazz.ClassUtils;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * @author pengshuaifeng
  * 2023/12/24
  */
-public class ObjectCopyUtil {
+public class ObjectCopyUtils {
 
     /**拷贝
      * 2023/2/10 0010-10:57
@@ -37,8 +37,8 @@ public class ObjectCopyUtil {
     public static <T> T copy(Object source,T newObject,boolean containSuper,boolean isCover){
         try {
             //获取源对象和目标对象的属性
-            List<Field> sourceDeclaredFields = ClassUtil.getSupperClassFields(source.getClass(),containSuper,null);
-            List<Field> declaredFields = ClassUtil.getSupperClassFields(newObject.getClass(),containSuper,null);
+            List<Field> sourceDeclaredFields = ClassUtils.getSupperClassFields(source.getClass(),containSuper,null);
+            List<Field> declaredFields = ClassUtils.getSupperClassFields(newObject.getClass(),containSuper,null);
             //源对象属性集合封装
             Map<String, Field> sourceFieldMap =sourceDeclaredFields.stream().collect(
                     Collectors.toMap(
@@ -51,7 +51,7 @@ public class ObjectCopyUtil {
                 newField.setAccessible(true);
                 Field sourceField = sourceFieldMap.get(newField.getName());
                 //源对象中存在此字段且类型同目录对象中的字段一致
-                if(sourceField!=null&& ClassUtil.typeEquals(sourceField.getType(),newField.getType())){
+                if(sourceField!=null&& ClassUtils.typeEquals(sourceField.getType(),newField.getType())){
                     sourceField.setAccessible(true);
                     //目标对象值为空或允许覆盖
                     if (newField.get(newObject)==null || isCover) {
