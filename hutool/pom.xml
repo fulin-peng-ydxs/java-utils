@@ -8,7 +8,36 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>hutool</artifactId>
+
+    <properties>
+        <hutool.version>5.8.0.M2</hutool.version>
+        <poi.version>5.0.0</poi.version>
+    </properties>
+
+    <dependencies>
+
+        <!--hutool工具包-->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+
+        <!--poi-excel工具类支撑-->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+
+        <!--基础模块依赖-->
+        <dependency>
+            <groupId>S1897.java.utils</groupId>
+            <artifactId>basic</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+    </dependencies>
 
 </project>

@@ -27,7 +27,7 @@
 
     <dependencies>
 
-        <!--注解简化工具-->
+        <!--lombok工具-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
