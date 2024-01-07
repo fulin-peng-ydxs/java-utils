@@ -34,7 +34,7 @@ public class ExcelUtils {
      * @param isXlsx 是否导出为xlsx格式
      * @param mergeModels 合并单元格模型
      */
-    //TODO 默认只写入第一个sheet，暂不支持普通数据单元格样式处理
+    //TODO 默认只写入第一个sheet，暂不支持普通数据单元格样式处理&自定义样式配置
     public static void export(Map<String,String> headers, List<?> rows,OutputStream out, boolean isXlsx, List<MergeModel> mergeModels){
         try {
             ExcelWriter writer = writeRow(headers, rows, isXlsx);
