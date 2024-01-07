@@ -15,15 +15,15 @@ import java.io.OutputStream;
 public class FileUtils {
 
     /**
-     *文件输出
+     *写出文件
      *2023/9/2 09:14
      *@author pengshuaifeng
      *@param content 字节数组
      *@param fileName 文件名
      *@param path 文件目录
      */
-    public static void flush(byte[] content,String fileName,String path){
-        try(FileOutputStream outputStream = new FileOutputStream(createFile(path,fileName))){
+    public static void write(byte[] content,String fileName,String path){
+        try(OutputStream outputStream =  getOutputStream(fileName,path)){
             outputStream.write(content);
         } catch (Exception e) {
            throw new RuntimeException("文件输出异常：",e);
@@ -37,7 +37,7 @@ public class FileUtils {
      * @param fileName 文件名
      * @param path 文件目录
      */
-    public static OutputStream getFileOutputStream(String fileName,String path){
+    public static OutputStream getOutputStream(String fileName,String path){
         try {
             return new FileOutputStream(createFile(path==null?getSystemHomePath():path, fileName));
         } catch (FileNotFoundException e) {

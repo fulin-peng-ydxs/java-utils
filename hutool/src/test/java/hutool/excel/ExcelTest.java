@@ -22,7 +22,7 @@ public class ExcelTest {
     public void test(){
         List<User> users = Arrays.asList(new User("test1", "test1-1", 1),
                 new User("test2", "test2-1", 12), new User("test3", "test3-1", 99));
-        ExcelUtils.exportNoHead(null,users, FileUtils.getFileOutputStream("demo.xls",null),
+        ExcelUtils.exportNoHead(null,users, FileUtils.getOutputStream("demo.xls",null),
                 false,null);
     }
 }
