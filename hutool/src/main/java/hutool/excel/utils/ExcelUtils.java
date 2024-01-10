@@ -121,7 +121,7 @@ public class ExcelUtils {
      * @param type 属性实体类型
      * @param ignoreFields 需忽略的的实体属性
      */
-    public static Map<String,String> defineHeaders(Class<?> type, Set<String> ignoreFields){
+    public static Map<String,String> defineHeaders(Class<?> type, Collection<String> ignoreFields){
         Map<String, String> fields = new LinkedHashMap<>();
         Field[] declaredFields = type.getDeclaredFields();
         for (Field declaredField : declaredFields) {
