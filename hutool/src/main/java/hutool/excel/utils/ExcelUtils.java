@@ -53,7 +53,7 @@ public class ExcelUtils {
      * @param ignoreFields 需忽略的的实体属性
      */
     public static void exportNoHead(Set<String> ignoreFields, List<?> rows,OutputStream out, boolean isXlsx, List<MergeModel> mergeModels){
-        export(defineHeads(rows.get(0).getClass(),ignoreFields),rows,out,isXlsx,mergeModels);
+        export(defineHeaders(rows.get(0).getClass(),ignoreFields),rows,out,isXlsx,mergeModels);
     }
 
 
@@ -121,7 +121,7 @@ public class ExcelUtils {
      * @param type 属性实体类型
      * @param ignoreFields 需忽略的的实体属性
      */
-    public static Map<String,String> defineHeads(Class<?> type, Set<String> ignoreFields){
+    public static Map<String,String> defineHeaders(Class<?> type, Set<String> ignoreFields){
         Map<String, String> fields = new LinkedHashMap<>();
         Field[] declaredFields = type.getDeclaredFields();
         for (Field declaredField : declaredFields) {
