@@ -41,7 +41,7 @@
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
         </dependency>
-        <!--2：日志转换&日志抽象-->
+        <!--2：日志转换-->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
