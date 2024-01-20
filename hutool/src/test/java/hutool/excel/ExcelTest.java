@@ -3,11 +3,11 @@ package hutool.excel;
 
 import basic.file.FileUtils;
 import hutool.entity.User;
+import hutool.entity.UserRead;
 import hutool.excel.utils.ExcelUtils;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * excel测试
@@ -24,5 +24,21 @@ public class ExcelTest {
                 new User("test2", "test2-1", 12), new User("test3", "test3-1", 99));
         ExcelUtils.exportNoHead(null,users, FileUtils.getOutputStream("demo.xls",null),
                 false,null);
+    }
+
+    @Test
+    public void readCn() throws Exception {
+        Map<String, String> targetFields = new HashMap<>();
+        targetFields.put("name","用户名");
+        targetFields.put("address","地址");
+        targetFields.put("age","年龄");
+        Collection<UserRead> users = ExcelUtils.read(ExcelTest.class.getResourceAsStream("/read_cn.xls"), UserRead.class, targetFields);
+        System.out.println(users);
+    }
+
+    @Test
+    public void readEn() throws Exception {
+        Collection<UserRead> users = ExcelUtils.read(ExcelTest.class.getResourceAsStream("/read_en.xls"), UserRead.class);
+        System.out.println(users);
     }
 }

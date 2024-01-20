@@ -14,9 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class User {
+public class UserRead {
     private String name;
     private String address;
-    private int age;
+    private Long age;
 }
 

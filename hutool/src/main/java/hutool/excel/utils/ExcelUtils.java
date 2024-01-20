@@ -1,7 +1,9 @@
 package hutool.excel.utils;
 
 import basic.clazz.ClassUtils;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import cn.hutool.poi.excel.cell.CellUtil;
@@ -9,6 +11,8 @@ import cn.hutool.poi.excel.style.StyleUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.poi.ss.formula.functions.Index;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -183,6 +187,148 @@ public class ExcelUtils {
             workbook.close();
         }
     }
+
+    /**
+     * 导入数据
+     * <p>默认导入第一个sheet，第一行为表头，第二行第一列开始读取数据</p>
+     * @param in excel流
+     * @param targetType excel构建对象类型
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    //TODO 暂只支持读取一个sheet
+    public static  <T> Collection<T> read(InputStream in,Class<T> targetType) throws Exception {
+        return read(in,targetType,0,0,1,null);
+    }
+
+    /**
+     * 导入数据
+     * <p>默认第一行为表头，第二行第一列开始读取数据</p>
+     * @param in excel流
+     * @param targetType excel构建对象类型
+     * @param sheetName excel导入的sheet名
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    public static  <T> Collection<T> read(InputStream in,Class<T> targetType,String sheetName) throws Exception {
+        return read(in,targetType,sheetName,0,1,null);
+    }
+
+    /**
+     * 导入数据
+     * <p>默认导入第一个sheet，第一行为表头，第二行第一列开始读取数据</p>
+     * @param in excel流
+     * @param targetType excel构建对象类型
+     * @param targetFields 构建对象字段的表头映射：key为字段名 ，value为表头列名，没有则根据默认规则生成进行匹配
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    public static  <T> Collection<T> read(InputStream in,Class<T> targetType,Map<String,String> targetFields) throws Exception {
+        return read(in,targetType,0,0,1,targetFields);
+    }
+
+    /**
+     * 导入数据
+     * <p>默认第一行为表头，第二行第一列开始读取数据</p>
+     * @param in excel流
+     * @param targetType excel构建对象类型
+     * @param sheetName excel导入的sheet名
+     * @param targetFields 构建对象字段的表头映射：key为字段名 ，value为表头列名，没有则根据默认规则生成进行匹配
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    public static  <T> Collection<T> read(InputStream in,Class<T> targetType,String sheetName,Map<String,String> targetFields) throws Exception {
+        return read(in,targetType,sheetName,0,1,targetFields);
+    }
+
+    /**
+     * 导入数据
+     * @param in excel流
+     * @param targetType excel构建对象类型
+     * @param sheetIndex excel导入的sheet索引
+     * @param headerIndex 表头所在行的索引
+     * @param startRowIndex 数据所在的开始行的索引
+     * @param targetFields 构建对象字段的表头映射：key为字段名 ，value为表头列名，没有则根据默认规则生成进行匹配
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    public static  <T> Collection<T> read(InputStream in,Class<T> targetType,int sheetIndex,int headerIndex,int startRowIndex,Map<String,String> targetFields) throws Exception {
+        //加载数据
+        ExcelReader reader = ExcelUtil.getReader(in, sheetIndex);
+        return read(reader,targetType,headerIndex,startRowIndex,targetFields);
+    }
+
+    /**
+     * 导入数据
+     * @param in excel流
+     * @param targetType excel构建对象类型
+     * @param sheetName excel导入的sheet名
+     * @param headerIndex 表头所在行的索引
+     * @param startRowIndex 数据所在的开始行的索引
+     * @param targetFields 构建对象字段的表头映射：key为字段名 ，value为表头列名，没有则根据默认规则生成进行匹配
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    public static  <T> Collection<T> read(InputStream in,Class<T> targetType,String sheetName,int headerIndex,int startRowIndex,Map<String,String> targetFields) throws Exception{
+        //加载数据
+        ExcelReader reader = ExcelUtil.getReader(in, sheetName);
+        return read(reader,targetType,headerIndex,startRowIndex,targetFields);
+    }
+
+    /**
+     * 导入数据
+     * @param reader excel读取器
+     * @param targetType excel构建对象类型
+     * @param headerIndex 表头所在行的索引
+     * @param startRowIndex 数据所在的开始行的索引
+     * @param targetFieldNames 构建对象字段的表头映射：key为字段名 ，value为表头列名，没有则根据默认规则生成进行匹配
+     * 2024/1/19 01:18
+     * @author pengshuaifeng
+     */
+    private static  <T> Collection<T> read(ExcelReader reader,Class<T> targetType,int headerIndex,int startRowIndex,Map<String,String> targetFieldNames) throws Exception{
+        List<T> results = new LinkedList<>();  //结果集
+        //加载数据行
+        List<List<Object>> rows = reader.read();
+        if(rows!=null &&!rows.isEmpty()){
+            Map<String,Field> targetFields = new HashMap<>();
+            //获取表头映射
+            if(targetFieldNames==null){
+                for (Field declaredField : targetType.getDeclaredFields()) {
+                    //TODO 后续通过属性注解实现中文名映射，建议使用swagger
+                    declaredField.setAccessible(true);
+                    targetFields.put(declaredField.getName(),declaredField);
+                }
+            }else{
+                for (Field declaredField : targetType.getDeclaredFields()) {
+                    String headerName = targetFieldNames.get(declaredField.getName());
+                    if (headerName!=null) {
+                        declaredField.setAccessible(true);
+                        targetFields.put(headerName,declaredField);
+                    }
+                }
+            }
+            Map<Integer,Field> headerMappings=new HashMap<>();
+            List<Object> headerRow = rows.get(headerIndex);
+            for (int i = 0; i < headerRow.size(); i++) {
+                Field field = targetFields.get(headerRow.get(i).toString());
+                if(field==null)
+                    continue;
+                headerMappings.put(i,field);
+            }
+            //读取数据
+            for (int rowIndex = startRowIndex; rowIndex < rows.size(); rowIndex++) {  //遍历每一行
+                T data = targetType.newInstance();
+                List<Object> row = rows.get(rowIndex);
+                for (Map.Entry<Integer, Field> fieldEntry : headerMappings.entrySet()) {
+                    Object colData = row.get(fieldEntry.getKey());
+                    fieldEntry.getValue().set(data,colData); //将关联的列的值赋值到字段中
+                }
+                results.add(data);
+            }
+        }
+        return results;
+    }
+
 
     /**合并单元格
      * 2022/11/25 0025-17:56
