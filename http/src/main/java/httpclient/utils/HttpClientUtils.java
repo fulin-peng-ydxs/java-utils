@@ -34,7 +34,7 @@ import java.util.Map;
  * 2023-06-15 14:51
  */
 @Slf4j
-public abstract class HttpClientUtil {
+public abstract class HttpClientUtils {
 
     /**通用请求执行
      * 2023/6/15 0015-14:53
