@@ -1,7 +1,6 @@
 package hutool.excel.utils;
 
 import basic.clazz.ClassUtils;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
@@ -11,8 +10,6 @@ import cn.hutool.poi.excel.style.StyleUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.poi.ss.formula.functions.Index;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import java.io.IOException;
 import java.io.InputStream;
