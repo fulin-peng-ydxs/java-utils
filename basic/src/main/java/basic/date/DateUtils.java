@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import json.jackson.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +25,9 @@ public class DateUtils {
 
     //年度节假日数据
     private static Map<String, Map<String, List<String>>> holidayData;
+
+    //默认DateFormat
+    private static final DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     //数据加载
     static {
@@ -310,6 +315,35 @@ public class DateUtils {
                 .toInstant());
     }
 
+    /**
+     * 字符串转Date
+     * 2024/3/6 0006 16:10
+     * @author fulin-peng
+     */
+    public static Date stringToDate(String value,DateFormat dateFormat) throws ParseException {
+        return dateFormat.parse(value);
+    }
+
+    /**
+     * 字符串转Date
+     * <p>使用默认格式</p>
+     * 2024/3/6 0006 16:16
+     * @author fulin-peng
+     */
+    public static Date stringToDate(String value) throws ParseException {
+        return stringToDate(value,format);
+    }
+
+    /**
+     * 字符串转Date
+     * 2024/3/6 0006 16:16
+     * @param value 时间字符串
+     * @param dateFormat 时间格式
+     * @author fulin-peng
+     */
+    public static Date stringToDate(String value,String dateFormat) throws ParseException {
+        return stringToDate(value,new SimpleDateFormat(dateFormat));
+    }
     public enum DateUnitType {
         SECOND,
         MINUTE,

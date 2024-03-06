@@ -78,11 +78,14 @@ public abstract class HttpClientUtils {
         if(requestType==RequestType.GET){  //GET请求
             //请求url参数添加
             if(params!=null&& !params.isEmpty()){
-                URIBuilder uriBuilder = new URIBuilder(url);
+                StringBuilder urlBuilder=new StringBuilder(url);
+                if (url.lastIndexOf("?")<0) {
+                    urlBuilder.append("?");
+                }
                 params.forEach((key,value)->{
-                    uriBuilder.setParameter(key, (String) value);
+                    urlBuilder.append(key).append("=").append(value).append("&");
                 });
-                url=uriBuilder.build().toString();
+                url=urlBuilder.substring(0,urlBuilder.length()-1);
             }
             log.debug("HttpClient-Get调用服务：{}",url);
             httpRequest= new HttpGet(url);
