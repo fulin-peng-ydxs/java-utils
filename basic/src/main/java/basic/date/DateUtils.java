@@ -344,6 +344,26 @@ public class DateUtils {
     public static Date stringToDate(String value,String dateFormat) throws ParseException {
         return stringToDate(value,new SimpleDateFormat(dateFormat));
     }
+
+    /**
+     * 时间戳转Date
+     * 2024/3/27 21:09
+     * @author pengshuaifeng
+     */
+    public static Date timestampToDate(long timestamp){
+        return new Date(timestamp);
+    }
+
+    /**
+     * 时间戳转LocalDateTime
+     * 2024/3/27 21:10
+     * @author pengshuaifeng
+     */
+    public static LocalDateTime timestampToLocalDateTime(long timestamp){
+        return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    }
+
+
     public enum DateUnitType {
         SECOND,
         MINUTE,
