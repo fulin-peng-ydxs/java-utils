@@ -116,6 +116,7 @@ public abstract class HttpClientUtils {
             for (Map.Entry<String,String> headersEntry : headers.entrySet()) {
                 httpRequest.setHeader(headersEntry.getKey(),headersEntry.getValue());
             }
+            log.debug("HttpClient-调用服务头信息：headers:{}",headers);
         }
         //执行请求
         return abstractResponse(httpClient.execute(httpRequest),targetType,targetName,statusName,statusValue,errorName);
