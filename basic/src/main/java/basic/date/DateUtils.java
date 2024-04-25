@@ -28,6 +28,7 @@ public class DateUtils {
 
     //默认DateFormat
     private static final DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     //数据加载
     static {
@@ -51,17 +52,17 @@ public class DateUtils {
      * @author pengshuaifeng
      */
     public static String format(Date date,String pattern){
-        SimpleDateFormat dateFormat = new SimpleDateFormat(pattern);
+        DateFormat dateFormat = pattern==null?format:new SimpleDateFormat(pattern);
         return dateFormat.format(date);
     }
 
     public static String format(LocalDate localDate,String pattern){
-        DateTimeFormatter dateTimeFormatter= DateTimeFormatter.ofPattern(pattern);
+        DateTimeFormatter dateTimeFormatter= pattern==null?dateTimeFormat:DateTimeFormatter.ofPattern(pattern);
         return dateTimeFormatter.format(localDate);
     }
 
     public static String format(LocalDateTime localDate,String pattern){
-        DateTimeFormatter dateTimeFormatter= DateTimeFormatter.ofPattern(pattern);
+        DateTimeFormatter dateTimeFormatter=pattern==null?dateTimeFormat:DateTimeFormatter.ofPattern(pattern);
         return dateTimeFormatter.format(localDate);
     }
 
