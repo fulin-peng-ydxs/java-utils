@@ -154,7 +154,7 @@ public class DateUtils {
         //2--时间间隔天数计算
         long daysBetween = ChronoUnit.DAYS.between(startLocalDate, endLocalDate);
         daysBetween=daysBetween==0?0:daysBetween+1;
-        //2.1：遍历间隔中的每一天：移除掉节假日，如果需要的话,移除掉起止时间，如果需要的话
+        //2.1：遍历间隔中的每一天：移除掉节假日，如果需要的话,移除掉起止时间
         int dayNum=0;
         for (int i = 0; i < daysBetween; i++) {
             LocalDate currentDate = startLocalDate.plusDays(i);
@@ -321,8 +321,12 @@ public class DateUtils {
      * 2024/3/6 0006 16:10
      * @author fulin-peng
      */
-    public static Date stringToDate(String value,DateFormat dateFormat) throws ParseException {
-        return dateFormat.parse(value);
+    public static Date stringToDate(String value,DateFormat dateFormat) {
+        try {
+            return dateFormat.parse(value);
+        } catch (ParseException e) {
+            throw new RuntimeException("字符串转Date异常",e);
+        }
     }
 
     /**
@@ -331,7 +335,7 @@ public class DateUtils {
      * 2024/3/6 0006 16:16
      * @author fulin-peng
      */
-    public static Date stringToDate(String value) throws ParseException {
+    public static Date stringToDate(String value) {
         return stringToDate(value,format);
     }
 
@@ -342,7 +346,7 @@ public class DateUtils {
      * @param dateFormat 时间格式
      * @author fulin-peng
      */
-    public static Date stringToDate(String value,String dateFormat) throws ParseException {
+    public static Date stringToDate(String value,String dateFormat){
         return stringToDate(value,new SimpleDateFormat(dateFormat));
     }
 
