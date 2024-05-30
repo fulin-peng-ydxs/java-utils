@@ -256,6 +256,7 @@ public abstract class HttpClientUtils {
         int statusCode = response.getStatusLine().getStatusCode();
         Header contentType = response.getFirstHeader("Content-Type");
         HttpEntity entity = response.getEntity();
+        //TODO 后续补充文件涉及的其他信息处理和类型判断完善，例如文件名、响应类型等
         if(statusCode ==200 && targetType== ByteArrayOutputStream.class && MimeContentType.APPLICATION_OCTET_STREAM.value.equals(contentType.getValue())){ //文件流
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
