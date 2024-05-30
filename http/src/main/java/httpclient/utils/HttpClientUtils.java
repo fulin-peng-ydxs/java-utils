@@ -2,6 +2,8 @@ package httpclient.utils;
 
 import json.jackson.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -9,7 +11,6 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -21,12 +22,14 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import javax.net.ssl.SSLContext;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 /**
  * httpclient调用工具类
  *
@@ -75,7 +78,7 @@ public abstract class HttpClientUtils {
     public static  <T> T execute(HttpClient httpClient,RequestType requestType, String url, Map<String,Object> params,Map<String,String> headers, Class<T> targetType,
                                  String targetName, String statusName, String statusValue, String errorName) throws Exception {
         HttpUriRequest httpRequest=null;
-        if(requestType==RequestType.GET){  //GET请求
+        if(requestType== RequestType.GET){  //GET请求
             //请求url参数添加
             if(params!=null&& !params.isEmpty()){
                 StringBuilder urlBuilder=new StringBuilder(url);
@@ -91,11 +94,11 @@ public abstract class HttpClientUtils {
             httpRequest= new HttpGet(url);
         }else{ //POST&其他请求
             String contentType =null;
-            boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.equals(RequestDataType.APPLICATION_JSON.value);
+            boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.equals(MimeContentType.APPLICATION_JSON.value);
             HttpPost httpPost= new HttpPost(url);
             httpRequest= httpPost;
             if(isNotJson) {
-                if (contentType.equals(RequestDataType.URL_ENCODED_FORM.value)) {  //url编码表单处理
+                if (contentType.equals(MimeContentType.URL_ENCODED_FORM.value)) {  //url编码表单处理
                     // 添加请求参数
                     List<NameValuePair> urlParameters = new ArrayList<>();
                     params.forEach((key,value)->{
@@ -154,7 +157,7 @@ public abstract class HttpClientUtils {
                                               String targetName,String statusName, String statusValue, String errorName) throws Exception {
         if(headers==null)
             headers= new HashMap<>();
-        headers.put("Content-Type",RequestDataType.URL_ENCODED_FORM.value);
+        headers.put("Content-Type", MimeContentType.URL_ENCODED_FORM.value);
         return execute(RequestType.POST, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
     }
 
@@ -195,6 +198,17 @@ public abstract class HttpClientUtils {
      */
     public static <T> T executeUpload(String url, InputStream inputStream,Map<String,String> headers,Class<T> targetType,
                                       String targetName,String statusName, String statusValue, String errorName, String fileName) throws Exception {
+        return executeMutilPart(url,null,headers,targetType,targetName,statusName,statusValue,errorName,inputStream,fileName);
+    }
+
+    /**
+     * 多部分请求
+     * 2023/11/28 0028 11:05
+     * @author fulin-peng
+     */
+    public static <T> T executeMutilPart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+                                         String targetName,String statusName, String statusValue, String errorName,
+                                         InputStream fileInputStream,String fileName) throws Exception {
         try (CloseableHttpClient httpClient = createHttpClient(false)) {
             HttpPost httpPost = new HttpPost(url);
             //设置请求头
@@ -212,8 +226,14 @@ public abstract class HttpClientUtils {
             当您收到一个 HTTP 响应，其内容类型被标记为 application/octet-stream 时，这意味着服务器正在传输二进制数据，但它不提供有关数据内容的详细信息。
             通常，这种情况下，您需要根据您的应用程序的需要来处理这些数据，例如，将它们保存到文件或执行其他操作。
             application/octet-stream 的主要作用是通知接收端，它不应该尝试解释数据内容，而应该将数据保存为原始的二进制形式。这对于传输各种文件和数据类型非常有用，因为它确保数据的完整性和保密性。*/
-            entityBuilder.addBinaryBody("file",inputStream,
+            entityBuilder.addBinaryBody("file",fileInputStream,
                     ContentType.APPLICATION_OCTET_STREAM,fileName);
+            //添加其他参数
+            if(params!=null){
+                params.forEach((key,value)->{
+                    entityBuilder.addBinaryBody(key,value.toString().getBytes(StandardCharsets.UTF_8));
+                });
+            }
             //设置请求体模式：浏览器兼容模式，即只写"Content-Disposition";使用内容字符集
             entityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
             //设置请求体字符集
@@ -225,11 +245,6 @@ public abstract class HttpClientUtils {
         }
     }
 
-    /**
-     * 多部分请求
-     * 2023/11/28 0028 11:05
-     * @author fulin-peng
-     */
 
     /**响应解析
      * 2023/6/15 0015-15:09
@@ -238,9 +253,20 @@ public abstract class HttpClientUtils {
      */
     private static <T> T abstractResponse(HttpResponse response,Class<T> targetType, String targetName, String statusName, String statusValue, String errorName)
             throws Exception{
-        String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
-        log.debug("HttpClient调用结果：{}",responseJson);
         int statusCode = response.getStatusLine().getStatusCode();
+        Header contentType = response.getFirstHeader("Content-Type");
+        HttpEntity entity = response.getEntity();
+        if(statusCode ==200 && targetType== ByteArrayOutputStream.class && MimeContentType.APPLICATION_OCTET_STREAM.value.equals(contentType.getValue())){ //文件流
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = entity.getContent().read(buffer)) != -1) {
+                byteArrayOutputStream.write(buffer, 0, bytesRead);
+            }
+            return (T) byteArrayOutputStream;
+        }
+        String responseJson = EntityUtils.toString(entity, "UTF-8");
+        log.debug("HttpClient调用结果：{}",responseJson);
         if(statusCode==500)
             throw new RuntimeException("远程服务调用异常："+responseJson);
         //如果targetName&statusName均为空，则直接将响应结果转换成targetType类型直接返回
@@ -272,12 +298,6 @@ public abstract class HttpClientUtils {
             throw new RuntimeException("响应数据缺失或为空："+responseJson);
         return JsonUtils.getObject(resData,targetType);
     }
-
-    /**
-     * 文件请求下载
-     * 2023/10/16 00:10
-     * @author pengshuaifeng
-     */
 
 
     /**
@@ -318,15 +338,17 @@ public abstract class HttpClientUtils {
      * 2023/12/11 00:17
      * @author pengshuaifeng
      */
-    public enum RequestDataType {
+    public enum MimeContentType {
 
         URL_ENCODED_FORM("application/x-www-form-urlencoded"),
 
-        APPLICATION_JSON("application/json");
+        APPLICATION_JSON("application/json"),
+
+        APPLICATION_OCTET_STREAM("application/octet-stream");
 
         public final String value;
 
-        RequestDataType(String value) {
+        MimeContentType(String value) {
             this.value = value;
         }
     }
