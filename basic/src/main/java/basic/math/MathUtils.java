@@ -22,7 +22,7 @@ public class MathUtils {
      * @param  containUnit 是否包含单位
      * @param  unitSplit 单位分隔符：默认为空
      */
-    public static String formatNumber(Long number,String y,String w,String q,boolean containUnit,String unitSplit) {
+    public static String numberToCnUnit(Long number,String y,String w,String q,boolean containUnit,String unitSplit) {
         DecimalFormat formatter;
         // 1 亿 = 100,000,000
         if (number >= 100000000) {
@@ -43,12 +43,12 @@ public class MathUtils {
         }
     }
 
-    public static String formatNumber(Long number,boolean containUnit,String unitSplit) {
-        return formatNumber(number,"0.00","0.0","0.0",containUnit,unitSplit);
+    public static String numberToCnUnit(Long number,boolean containUnit,String unitSplit) {
+        return numberToCnUnit(number,"0.00","0.0","0.0",containUnit,unitSplit);
     }
 
-    public static String formatNumber(Long number) {
-        return formatNumber(number,"0.00","0.0","0.0",true,"");
+    public static String numberToCnUnit(Long number) {
+        return numberToCnUnit(number,"0.00","0.0","0.0",true,"");
     }
 
 
