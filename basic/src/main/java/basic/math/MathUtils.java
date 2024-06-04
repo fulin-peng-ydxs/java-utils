@@ -12,7 +12,7 @@ public class MathUtils {
 
 
     /**
-     * 整数计量格式输出
+     * 整数计量中文单位输出
      * 2024/4/24 0024 18:48
      * @author fulin-peng
      * @param  number 整数
