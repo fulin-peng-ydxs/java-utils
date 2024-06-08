@@ -15,7 +15,7 @@ public class ReusableInputStream {
 
     /**
      * 构造函数
-     * @param original 原始流数据
+     * @param original 原始输入流数据
      * 2024/6/8 0008 10:28
      * @author fulin-peng
      */
