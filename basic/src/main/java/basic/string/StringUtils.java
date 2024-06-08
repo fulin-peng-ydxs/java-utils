@@ -125,7 +125,7 @@ public class StringUtils {
         ALL,
         START,
         END,
-        NO_MIDDLE;
+        NO_MIDDLE
     }
 
 
@@ -168,7 +168,7 @@ public class StringUtils {
         ALL,
         START,
         END,
-        NO_MIDDLE;
+        NO_MIDDLE
     }
 
 
