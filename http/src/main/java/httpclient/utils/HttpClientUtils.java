@@ -94,11 +94,11 @@ public abstract class HttpClientUtils {
             httpRequest= new HttpGet(url);
         }else{ //POST&其他请求
             String contentType =null;
-            boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.equals(MimeContentType.APPLICATION_JSON.value);
+            boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.equals(MimeType.APPLICATION_JSON);
             HttpPost httpPost= new HttpPost(url);
             httpRequest= httpPost;
             if(isNotJson) {
-                if (contentType.equals(MimeContentType.URL_ENCODED_FORM.value)) {  //url编码表单处理
+                if (contentType.equals(MimeType.URL_ENCODED_FORM)) {  //url编码表单处理
                     // 添加请求参数
                     List<NameValuePair> urlParameters = new ArrayList<>();
                     params.forEach((key,value)->{
@@ -112,7 +112,7 @@ public abstract class HttpClientUtils {
                 log.debug("HttpClient-Post(Json)调用服务：url:{},params:{}",url,paramJson);
                 httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
                 //设置请求头
-                httpPost.setHeader("Content-Type","application/json");
+                httpPost.setHeader("Content-Type",MimeType.APPLICATION_JSON);
             }
         }
         if(headers!=null){
@@ -157,7 +157,7 @@ public abstract class HttpClientUtils {
                                               String targetName,String statusName, String statusValue, String errorName) throws Exception {
         if(headers==null)
             headers= new HashMap<>();
-        headers.put("Content-Type", MimeContentType.URL_ENCODED_FORM.value);
+        headers.put("Content-Type", MimeType.URL_ENCODED_FORM);
         return execute(RequestType.POST, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
     }
 
@@ -257,7 +257,7 @@ public abstract class HttpClientUtils {
         Header contentType = response.getFirstHeader("Content-Type");
         HttpEntity entity = response.getEntity();
         //TODO 后续补充文件涉及的其他信息处理和类型判断完善，例如文件名、响应类型等
-        if(statusCode ==200 && targetType== ByteArrayOutputStream.class && MimeContentType.APPLICATION_OCTET_STREAM.value.equals(contentType.getValue())){ //文件流
+        if(statusCode ==200 && targetType== ByteArrayOutputStream.class && MimeType.APPLICATION_OCTET_STREAM.equals(contentType.getValue())){ //文件流
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -339,19 +339,10 @@ public abstract class HttpClientUtils {
      * 2023/12/11 00:17
      * @author pengshuaifeng
      */
-    public enum MimeContentType {
-
-        URL_ENCODED_FORM("application/x-www-form-urlencoded"),
-
-        APPLICATION_JSON("application/json"),
-
-        APPLICATION_OCTET_STREAM("application/octet-stream");
-
-        public final String value;
-
-        MimeContentType(String value) {
-            this.value = value;
-        }
+    public static class MimeType {
+        public static final String URL_ENCODED_FORM = "application/x-www-form-urlencoded";
+        public static final String APPLICATION_JSON = "application/json";
+        public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
     }
 
 }
