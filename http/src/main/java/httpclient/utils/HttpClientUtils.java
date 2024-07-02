@@ -292,7 +292,9 @@ public abstract class HttpClientUtils {
             String error =(String) result.get(errorName);
             throw new RuntimeException("请求失败："+error);
         }
-        if(targetName==null)  //如果结果名为空，则解析整个响应信息
+        if(targetName==null)  //如果结果名为空，则解析null
+            return null;
+        if(targetName.equals("all-data"))  //如果结果名all-data，则解析整个响应信息
             return JsonUtils.getObject(responseJson,targetType);
         Object resData =result.get(targetName);
         if(resData==null)
