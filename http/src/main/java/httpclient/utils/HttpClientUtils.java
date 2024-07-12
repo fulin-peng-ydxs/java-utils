@@ -297,7 +297,7 @@ public abstract class HttpClientUtils {
         if(targetName.equals("all-data"))  //如果结果名all-data，则解析整个响应信息
             return JsonUtils.getObject(responseJson,targetType);
         Object resData =result.get(targetName);
-        if(resData==null)
+        if(resData==null || resData.equals("null"))
             throw new RuntimeException("响应数据缺失或为空："+responseJson);
         return JsonUtils.getObject(resData,targetType);
     }
