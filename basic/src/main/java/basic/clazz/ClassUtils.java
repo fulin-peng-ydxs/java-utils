@@ -1,6 +1,6 @@
 package basic.clazz;
 
-import java.lang.annotation.Annotation;
+import basic.string.StringUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -61,6 +61,19 @@ public class ClassUtils {
     public static void setFieldValue(String fieldName,Object fieldValue,Object value){
         try {
             Field field = value.getClass().getDeclaredField(fieldName);
+            setFieldValue(field,fieldValue,value);
+        } catch (Exception e) {
+            throw new RuntimeException("设置字段异常",e);
+        }
+    }
+
+    /**
+     * 设置字段值
+     * 2023/12/7 0007 16:20
+     * @author fulin-peng
+     */
+    public static void setFieldValue(Field field ,Object fieldValue,Object value){
+        try {
             field.setAccessible(true);
             field.set(value,fieldValue);
         } catch (Exception e) {
@@ -78,6 +91,18 @@ public class ClassUtils {
      */
     public static  <T extends Enum<T>> T getEnum(Class<T> enumType, String enumValue){
         return Enum.valueOf(enumType,enumValue);
+    }
+
+    /**
+     * 设置字段值：如果原值为空的话
+     * 2024/8/5 下午5:51
+     * @author fulin-peng
+     */
+    public static void setFieldValueWithNull(Field field ,Object fieldValue,Object value){
+        Object sourceValue = getFieldValue(field, fieldValue, Object.class);
+        if(sourceValue==null|| StringUtils.isEmpty(sourceValue.toString())){
+            setFieldValue(field,fieldValue,value);
+        }
     }
 
     /**
