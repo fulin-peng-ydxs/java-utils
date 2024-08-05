@@ -34,6 +34,12 @@ public class StringUtils {
         return !isEmpty(value);
     }
 
+    public static boolean isEmpty(Object value){
+        if(value ==null )
+            return false;
+        return !(value instanceof String) || isEmpty(value.toString(), true);
+    }
+
 
     /**清除指定字符
      * 2022/9/9 0009-15:47
