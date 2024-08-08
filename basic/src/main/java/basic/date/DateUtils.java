@@ -23,12 +23,17 @@ import java.util.Map;
 @Slf4j
 public class DateUtils {
 
-    //年度节假日数据
-    private static Map<String, Map<String, List<String>>> holidayData;
+    //默认format
+    public static final String defaultFormat="yyyy-MM-dd HH:mm:ss";
 
     //默认DateFormat
-    private static final DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateFormat format = new SimpleDateFormat(defaultFormat);
+
+    public static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern(defaultFormat);
+
+
+    //年度节假日数据
+    public static Map<String, Map<String, List<String>>> holidayData;
 
     //数据加载
     static {
