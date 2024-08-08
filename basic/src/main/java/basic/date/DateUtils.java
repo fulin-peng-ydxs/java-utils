@@ -66,6 +66,9 @@ public class DateUtils {
         return dateTimeFormatter.format(localDate);
     }
 
+    public static String format(Date date){
+        return format(date,null);
+    }
 
     /**
      * 调整时间
