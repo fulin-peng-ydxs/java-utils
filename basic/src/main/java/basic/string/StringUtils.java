@@ -195,23 +195,27 @@ public class StringUtils {
         if(StringUtils.isEmpty(start,true)|| StringUtils.isEmpty(end,true)){
             int index;
             if(StringUtils.isEmpty(start,true)){  //开始点为null
-                index=subStringIndex(end,index(value, end, isStartIndex, isContain,false));
+                index=index(value, end, isStartIndex, isContain,false);
                 if(index<0) return null;
                 return value.substring(0,index);
             }else{  //结束点为null
-                index = subStringIndex(start,index(value, start, isStartIndex, isContain,true));
+                index = index(value, start, isStartIndex, isContain,true);
                 if(index<0) return null;
                 return value.substring(index);
             }
         }
         //如果start&&end都不为空
-        int startIndex=subStringIndex(start,index(value, start, isStartIndex, isContain,true));
-        int endIndex=subStringIndex(end,index(value, end, isStartIndex, isContain,false));
+        int startIndex=index(value, start, isStartIndex, isContain,true);
+        int endIndex=index(value, end, isStartIndex, isContain,false);
         if(startIndex<0||endIndex<0)
             return null;
         if(startIndex>endIndex)
             return null;
         return value.substring(startIndex, endIndex);
+    }
+
+    public static String substring(String value,String start,String end,boolean isContain){
+        return substring(value,start,end,isContain,true);
     }
 
     /**
@@ -298,18 +302,6 @@ public class StringUtils {
         return builder.length()==0?null:builder.toString();
     }
 
-
-
-    /**
-     * substring提取的索引自动转换
-     * 2023/11/1 0001 17:15
-     * @author fulin-peng
-     */
-    private static int subStringIndex(String value,int startIndex){
-        return startIndex>=0 && value.length()!=1?startIndex+value.length()-1:startIndex;
-    }
-
-
     /**获取指定字符串的索引位置
      * 2022/9/26 0026-16:14
      * @author pengfulin
@@ -317,7 +309,7 @@ public class StringUtils {
      * @param indexValue 指定字符串
      * @param isStartIndex 是否为从前开始，否则将从尾部开始
      * @param isContain 是否为包含位置：便于截取操作
-     * @param isPrefix 指定字符串是否在前缀:便于截取操作
+     * @param isPrefix 向前截取还是向后截取，true为向后截截取，false向前截取
      * @return 返回指定字符串位置的索引
      */
     private static int index(String value,String indexValue,boolean isStartIndex,boolean isContain, boolean isPrefix){
@@ -327,11 +319,15 @@ public class StringUtils {
         }else{
             index=value.lastIndexOf(indexValue);
         }
-        if(index<0) return index;
-        if(isPrefix)
-            index=isContain?index:index+1;
-        else
-            index=isContain?index+1:index;
+        if(index<0)
+            return index;
+        if(isPrefix){  //向后截取
+            index=isContain?index:
+                    index+(Math.max(indexValue.length(), 1));
+        }
+        else{ //向前截取
+            index=isContain?index+indexValue.length()-1: index;
+        }
         return index;
     }
 }

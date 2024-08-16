@@ -1,6 +1,8 @@
 package basic.file;
 
 
+import basic.string.StringUtils;
+
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -53,6 +55,20 @@ public class FileUtils {
     public static String getSystemHomePath(){
         File homeDirectory = FileSystemView.getFileSystemView() .getHomeDirectory();
         return homeDirectory.getAbsolutePath();
+    }
+
+    /**
+     * 路径拼接
+     * 2024/8/8 下午3:32
+     * @author fulin-peng
+     */
+    public static String pathSeparator(String rootPath,String path){
+        String separator = File.separator;
+        if(rootPath.endsWith(separator) && path.startsWith(separator))
+            return rootPath+ StringUtils.substring(path,separator,null,false,true);
+        else if(!rootPath.endsWith(separator) && !path.startsWith(separator))
+            return rootPath + File.separator + path;
+        else return rootPath+path;
     }
 
     /**
