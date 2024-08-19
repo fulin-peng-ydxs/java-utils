@@ -343,7 +343,12 @@ public abstract class HttpClientUtils {
         }
     }
 
-    private static boolean responseIsEmpty(Object data){
+    /**
+     * 请求结果是否为空
+     * 2024/8/19 22:13
+     * @author pengshuaifeng
+     */
+    public static boolean responseIsEmpty(Object data){
         return (data == null || data.equals("null") || data.equals("{}") || data.equals("[]"));
     }
 
