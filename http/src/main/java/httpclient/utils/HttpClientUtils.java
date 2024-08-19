@@ -7,6 +7,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -17,6 +18,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -155,10 +157,17 @@ public abstract class HttpClientUtils {
      */
     public static <T> T executeUrlEncodedForm(String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
                                               String targetName,String statusName, String statusValue, String errorName) throws Exception {
+        try(CloseableHttpClient httpClient = createHttpClient(false)){
+            return executeUrlEncodedForm(httpClient,url, params,headers,targetType,targetName, statusName, statusValue, errorName);
+        }
+    }
+
+    public static <T> T executeUrlEncodedForm(HttpClient httpClient,String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+                                              String targetName,String statusName, String statusValue, String errorName) throws Exception {
         if(headers==null)
             headers= new HashMap<>();
         headers.put("Content-Type", MimeType.URL_ENCODED_FORM);
-        return execute(RequestType.POST, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
+        return execute(httpClient,RequestType.POST, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
     }
 
 
@@ -310,6 +319,14 @@ public abstract class HttpClientUtils {
      * @author pengshuaifeng
      */
     public static CloseableHttpClient createHttpClient(boolean ignoreSSl) throws Exception{
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setSocketTimeout(5000)  // 响应超时 5 秒
+                .build();
+        return createHttpClient(ignoreSSl, requestConfig);
+    }
+
+
+    public static CloseableHttpClient createHttpClient(boolean ignoreSSl,RequestConfig requestConfig) throws Exception{
         if(ignoreSSl){
             // 创建不验证证书的 SSL 上下文
             SSLContext sslContext = SSLContextBuilder.create()
@@ -317,11 +334,12 @@ public abstract class HttpClientUtils {
                     .build();
             // 创建 HttpClient，并禁用 SSL 验证
             return HttpClients.custom()
+                    .setDefaultRequestConfig(requestConfig)
                     .setSSLContext(sslContext)
                     .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                     .build();
         }else{
-            return HttpClients.createDefault();
+            return  HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
         }
     }
 
