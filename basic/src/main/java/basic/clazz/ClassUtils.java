@@ -1,9 +1,8 @@
 package basic.clazz;
 
 import basic.string.StringUtils;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -78,6 +77,41 @@ public class ClassUtils {
             field.set(value,fieldValue);
         } catch (Exception e) {
             throw new RuntimeException("设置字段异常",e);
+        }
+    }
+
+    /**
+     * 获取方法
+     * 2024/8/20 下午4:55
+     * @author fulin-peng
+     */
+    public static Method getMethod(Class<?> source,String methodName,Class<?>... parameterTypes){
+        try {
+            return source.getDeclaredMethod(methodName,parameterTypes);
+        } catch (Exception e) {
+            throw new RuntimeException("获取方法异常",e);
+        }
+    }
+
+    public static Method getMethod(Object source,String methodName,Class<?>... parameterTypes){
+        try {
+            return getMethod(source.getClass(),methodName,parameterTypes);
+        } catch (Exception e) {
+            throw new RuntimeException("获取方法异常",e);
+        }
+    }
+
+    /**
+     * 调用方法
+     * 2024/8/20 下午4:58
+     * @author fulin-peng
+     */
+    public static <T> T invokeMethod(Object source,Method method,Object... args){
+        try {
+            method.setAccessible(true);
+            return (T)method.invoke(source, args);
+        } catch (Exception e) {
+            throw new RuntimeException("调用方法异常",e);
         }
     }
 
