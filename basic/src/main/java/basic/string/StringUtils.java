@@ -4,8 +4,11 @@ import basic.collection.CollectionUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * String字符串工具类
@@ -330,4 +333,39 @@ public class StringUtils {
         }
         return index;
     }
+
+    /**
+     * 字符正则匹配提取
+     * 2024/8/23 下午2:23
+     * @param input 输入字符串
+     * @param regex 正则表达式
+     *  @param index 匹配索引 0为全部匹配    1为第一个匹配 2为第二个匹配 以此类推
+     * @author fulin-peng
+     * @return 返回匹配的字符串集合
+     */
+    public List<String> regexExtract(String input, String regex, int index) {
+        return regexExtract(input, regex, index, true);
+    }
+
+    /**
+     * 字符正则匹配提取
+     * 2024/8/23 下午2:23
+     * @param input 输入字符串
+     * @param regex 正则表达式
+     * @return 返回匹配的字符串集合
+     */
+    public List<String> regexExtract(String input, String regex) {
+        return regexExtract(input, regex, 0, false);
+    }
+
+    private List<String> regexExtract(String input, String regex, int index, boolean useIndex) {
+        List<String> values = new ArrayList<>();
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+        while (matcher.find()) {
+            values.add(useIndex ? matcher.group(index) : matcher.group());
+        }
+        return values;
+    }
+
 }
