@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-
+import lombok.Getter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -15,7 +15,10 @@ import java.util.Map;
 /**
  * 	json的工具类	
  */
+@Getter
 public abstract class JsonUtils {
+	
+	private static final ObjectMapper objectMapper = getMapper(true);
 
 	/**
 	 * json-序列化
@@ -24,7 +27,7 @@ public abstract class JsonUtils {
 	 * 2023/8/3 0003 11:47
 	 */
 	public static String getString(Object object,boolean prettyPrinter) {
-		ObjectMapper mapper =getMapper(true);
+		ObjectMapper mapper =getDefaultMapper();
 		ObjectWriter ow = mapper.writer();
 		if(prettyPrinter){
 			ow.withDefaultPrettyPrinter();
@@ -64,7 +67,7 @@ public abstract class JsonUtils {
 	 */
 	public static <T> T getObject(String str, Class<T> valueType) {
 		try {
-			return  getMapper(true).readValue(str, valueType);
+			return  getDefaultMapper().readValue(str, valueType);
 		} catch (IOException e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -77,7 +80,7 @@ public abstract class JsonUtils {
 	 */
 	public static <K,V> Map<K,V> getMap(String str, TypeReference<Map<K,V>> type){
 		try {
-			return getMapper(true).readValue(str,type);
+			return getDefaultMapper().readValue(str,type);
 		} catch (Exception e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -91,7 +94,7 @@ public abstract class JsonUtils {
 	 */
 	public static <T> List<T> getList(String str, TypeReference<List<T>> type){
 		try {
-			return getMapper(true).readValue(str,type);
+			return getDefaultMapper().readValue(str,type);
 		} catch (Exception e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -102,9 +105,9 @@ public abstract class JsonUtils {
 	 * 2023/11/13 00:22
 	 * @author pengshuaifeng
 	 */
-	public static <T> T getObjectParams(String str, Class<T> valueType,JavaType type){
+	public static <T> T getObjectParams(String str,JavaType type){
 		try {
-			return getMapper(true).readValue(str,type);
+			return getDefaultMapper().readValue(str,type);
 		} catch (Exception e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -117,7 +120,7 @@ public abstract class JsonUtils {
 	 */
 	public static <T> T getObject(InputStream stream, Class<T> valueType) {
 		try {
-			return getMapper(true).readValue(stream,valueType);
+			return getDefaultMapper().readValue(stream,valueType);
 		} catch (IOException e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -130,7 +133,7 @@ public abstract class JsonUtils {
 	 */
 	public static <K,V> Map<K,V> getMap(InputStream stream,TypeReference<Map<K,V>> type){
 		try {
-			return getMapper(true).readValue(stream,type);
+			return getDefaultMapper().readValue(stream,type);
 		} catch (Exception e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -144,15 +147,16 @@ public abstract class JsonUtils {
 	 */
 	public static <T> List<T> getList(InputStream stream,TypeReference<List<T>> type) {
 		try {
-			return getMapper(true).readValue(stream,type);
+			return getDefaultMapper().readValue(stream,type);
 		} catch (IOException e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
 	}
 
-	public static <T> T getObjectParams(InputStream stream, Class<T> valueType, JavaType type){
+
+	public static <T> T getObjectParams(InputStream stream,JavaType type){
 		try {
-			return getMapper(true).readValue(stream,type);
+			return getDefaultMapper().readValue(stream,type);
 		} catch (Exception e) {
 			throw new RuntimeException("json-序列化异常",e);
 		}
@@ -170,4 +174,9 @@ public abstract class JsonUtils {
 			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return mapper;
 	}
+
+	public static ObjectMapper getDefaultMapper(){
+		return objectMapper;
+	}
+	
 }
