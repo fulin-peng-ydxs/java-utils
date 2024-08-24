@@ -32,6 +32,32 @@ public class ClassUtils {
         return paramTypes;
     }
 
+    /**
+     * 获取字段：多级字段
+     * 2023/11/9 0009 12:05
+     * @param fieldName 字段名 xx.xx.~
+     * @param value 对象
+     * @return 字段对象
+     */
+    public static <T> T  getFieldValueWithMultistage(String fieldName,Object value){
+        try {
+            if (fieldName.contains(".")) {
+                String[] fields = fieldName.split("\\.");
+                for (String field : fields) {
+                    Object fieldValue = getFieldValue(field, value);
+                    if (fieldValue==null)
+                        return null;
+                    value=fieldValue;
+                }
+                return (T)value;
+            }else{
+                return getFieldValue(fieldName,value);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("获取字段异常",e);
+        }
+    }
+
 
     /**
      * 获取字段值
@@ -50,6 +76,16 @@ public class ClassUtils {
 
     public static  <T> T getFieldValue(Field field, Object value, Class<T> filedType){
         return getFieldValue(field.getName(), value, filedType);
+    }
+
+    public static  <T> T getFieldValue(String fieldName,Object value){
+        try {
+            Field field = value.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return (T)field.get(value);
+        } catch (Exception e) {
+            throw new RuntimeException("获取字段异常",e);
+        }
     }
 
     /**
@@ -170,6 +206,4 @@ public class ClassUtils {
     public static boolean typeEquals(Class<?> clazz1,Class<?> clazz2){
         return clazz1 == clazz2 || clazz2.isAssignableFrom(clazz1);
     }
-
-
 }
