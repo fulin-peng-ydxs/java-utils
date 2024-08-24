@@ -343,7 +343,7 @@ public class StringUtils {
      * @author fulin-peng
      * @return 返回匹配的字符串集合
      */
-    public List<String> regexExtract(String input, String regex, int index) {
+    public static List<String> regexExtract(String input, String regex, int index) {
         return regexExtract(input, regex, index, true);
     }
 
@@ -354,11 +354,11 @@ public class StringUtils {
      * @param regex 正则表达式
      * @return 返回匹配的字符串集合
      */
-    public List<String> regexExtract(String input, String regex) {
+    public static List<String> regexExtract(String input, String regex) {
         return regexExtract(input, regex, 0, false);
     }
 
-    private List<String> regexExtract(String input, String regex, int index, boolean useIndex) {
+    private static  List<String> regexExtract(String input, String regex, int index, boolean useIndex) {
         List<String> values = new ArrayList<>();
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(input);
