@@ -1,13 +1,13 @@
 package basic.file;
 
 
+import basic.collection.CollectionUtils;
 import basic.string.StringUtils;
 
 import javax.swing.filechooser.FileSystemView;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 文件工具
@@ -96,5 +96,61 @@ public class FileUtils {
         }
         return file;
     }
+
+
+    /**文件转字符串集合
+     * 2022/9/26 0026-15:43
+     * @param reader 读取字符流
+     * @param isClearSpacing 是否清除空格
+     * @param isClearBlankLines 是否清除空行
+     * @param codeBr 换行符
+     * @author pengfulin
+     */
+    public static List<String> fileToLines(Reader reader, boolean isClearSpacing , boolean isClearBlankLines, String codeBr) {
+        try {
+            LinkedList<String> lines = new LinkedList<>();
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String lineTemp;
+            while ((lineTemp = bufferedReader.readLine()) != null) {
+                StringBuilder builderLine = new StringBuilder();
+                if (isClearSpacing)
+                    lineTemp = lineTemp.trim();
+                if(isClearBlankLines){
+                    if (!(lineTemp.trim().length()>0))
+                        continue; //去除空行
+                }
+                builderLine.append(lineTemp);
+                if(codeBr!=null)
+                    builderLine.append(codeBr);
+                lines.add(builderLine.toString());
+            }
+            return lines.isEmpty()?null:lines;
+        } catch (Exception e) {
+            throw new RuntimeException("文件转化字符串集合异常",e);
+        }
+    }
+
+    /**文件转字符串
+     * 2022/10/10 0010-14:30
+     * @param reader 读取字符流
+     * @param isClearSpacing 是否清除空格
+     * @param isClearBlankLines 是否清除空行
+     * @param codeBr 换行符
+     * @author pengfulin
+     */
+    public static String fileToString(Reader reader, boolean isClearSpacing , boolean isClearBlankLines, String codeBr){
+        List<String> fileToLines = fileToLines(reader, isClearSpacing, isClearBlankLines, codeBr);
+        if(CollectionUtils.isEmpty(fileToLines))
+            return null;
+        StringBuilder builder = new StringBuilder();
+        for (String fileToLine : fileToLines)
+            builder.append(fileToLine);
+        return builder.length()==0?null:builder.toString();
+    }
+
+    public static String fileToString(Reader reader){
+        return fileToString(reader, false, false, null);
+    }
+
 
 }
