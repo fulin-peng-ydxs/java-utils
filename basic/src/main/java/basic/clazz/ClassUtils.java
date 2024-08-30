@@ -50,7 +50,7 @@ public class ClassUtils {
     }
 
     /**
-     * 获取字段：多级字段
+     * 获取字段值：多级字段
      * 2023/11/9 0009 12:05
      * @param fieldName 字段名 xx.xx.~
      * @param value 对象
