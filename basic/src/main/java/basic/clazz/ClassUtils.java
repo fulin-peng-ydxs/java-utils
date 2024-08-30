@@ -33,6 +33,23 @@ public class ClassUtils {
     }
 
     /**
+     * 是否含有父类或有实现指定接口
+     * 2024/8/30 上午9:20
+     * @author fulin-peng
+     */
+    public static boolean hasClass(Class<?> clazz,Class<?> targetClass){ return false;}
+
+    /**
+     * 是否含有字段
+     * 2024/8/30 上午9:19
+     * @author fulin-peng
+     */
+    public static boolean hasField(String fieldName,Class<?> clazz) {
+        return Arrays.stream(clazz.getDeclaredFields())
+                .anyMatch(field -> field.getName().equals(fieldName));
+    }
+
+    /**
      * 获取字段：多级字段
      * 2023/11/9 0009 12:05
      * @param fieldName 字段名 xx.xx.~
@@ -176,21 +193,21 @@ public class ClassUtils {
     }
 
     /**
-     * 查找属性
+     * 查找字段
      * @param clazz 类对象
      * @param  needSupper 是否需要包含父对象
      * @param  fields 属性集合
      * 2023/12/24 22:54
      * @author pengshuaifeng
      */
-    public static List<Field> getSupperClassFields(Class<?> clazz,boolean needSupper,List<Field> fields){
+    public static List<Field> getFields(Class<?> clazz,boolean needSupper,List<Field> fields){
         if(fields==null)
             fields=new LinkedList<>();
         if(clazz!=Object.class){
             fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
             Class<?> superclass = clazz.getSuperclass();
             if (superclass!=Object.class && needSupper) {
-                return getSupperClassFields(superclass,true,fields);
+                return getFields(superclass,true,fields);
             }
         }
         return fields;
