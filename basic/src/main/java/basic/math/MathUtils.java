@@ -54,7 +54,7 @@ public class MathUtils {
     }
 
     /**
-     * 获取0-x之间的随机数（不包括0）
+     * 获取0-x之间的随机数（不包括x）
      * 2024/9/1 22:11
      * @author pengshuaifeng
      */
