@@ -19,6 +19,10 @@ public class CollectionUtils {
         return collection==null||collection.isEmpty();
     }
 
+    public static <T> Collection<T> isEmptyOrDefault(Collection<T> collection){
+        return isEmpty(collection)?Collections.emptyList():collection;
+    }
+
     public static boolean isNotEmpty(Collection<?> collection){
         return !isEmpty(collection);
     }

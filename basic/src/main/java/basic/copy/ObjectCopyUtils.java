@@ -37,8 +37,8 @@ public class ObjectCopyUtils {
     public static <T> T copy(Object source,T newObject,boolean containSuper,boolean isCover){
         try {
             //获取源对象和目标对象的属性
-            List<Field> sourceDeclaredFields = ClassUtils.getSupperClassFields(source.getClass(),containSuper,null);
-            List<Field> declaredFields = ClassUtils.getSupperClassFields(newObject.getClass(),containSuper,null);
+            List<Field> sourceDeclaredFields = ClassUtils.getFields(source.getClass(),containSuper,null);
+            List<Field> declaredFields = ClassUtils.getFields(newObject.getClass(),containSuper,null);
             //源对象属性集合封装
             Map<String, Field> sourceFieldMap =sourceDeclaredFields.stream().collect(
                     Collectors.toMap(

@@ -236,52 +236,6 @@ public class StringUtils {
     }
 
 
-    /**文件转字符串集合
-     * 2022/9/26 0026-15:43
-     * @param reader 读取字符流
-     * @param isClearSpacing 是否清除空格
-     * @param isClearBlankLines 是否清除空行
-     * @param codeBr 换行符
-     * @author pengfulin
-     */
-    public static List<String> fileToLines(Reader reader, boolean isClearSpacing , boolean isClearBlankLines, String codeBr) {
-        try {
-            LinkedList<String> lines = new LinkedList<>();
-            BufferedReader bufferedReader = new BufferedReader(reader);
-            String lineTemp;
-            while ((lineTemp = bufferedReader.readLine()) != null) {
-                StringBuilder builderLine = new StringBuilder();
-                if (isClearSpacing)
-                    lineTemp = lineTemp.trim();
-                if(isClearBlankLines){
-                    if (!(lineTemp.trim().length()>0))
-                        continue; //去除空行
-                }
-                builderLine.append(lineTemp);
-                if(codeBr!=null)
-                    builderLine.append(codeBr);
-                lines.add(builderLine.toString());
-            }
-            return lines.isEmpty()?null:lines;
-        } catch (Exception e) {
-            throw new RuntimeException("文件转化字符串集合异常",e);
-        }
-    }
-
-    /**文件转字符串
-     * 2022/10/10 0010-14:30
-     * @author pengfulin
-    */
-    public static String fileToString(Reader reader, boolean isClearSpacing , boolean isClearBlankLines, String codeBr){
-        List<String> fileToLines = fileToLines(reader, isClearSpacing, isClearBlankLines, codeBr);
-        if(CollectionUtils.isEmpty(fileToLines))
-            return null;
-        StringBuilder builder = new StringBuilder();
-        for (String fileToLine : fileToLines)
-            builder.append(fileToLine);
-        return builderToString(builder);
-    }
-
     /**
      * 字符串集合转字符串
      * 2023/9/5 21:15
