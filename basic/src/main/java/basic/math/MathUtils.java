@@ -1,5 +1,7 @@
 package basic.math;
 
+import com.oracle.tools.packager.mac.MacBaseInstallerBundler;
+
 import java.text.DecimalFormat;
 
 /**
@@ -51,5 +53,22 @@ public class MathUtils {
         return numberToCnUnit(number,"0.00","0.0","0.0",true,"");
     }
 
+    /**
+     * 获取0-x之间的随机数（不包括x）
+     * 2024/9/1 22:11
+     * @author pengshuaifeng
+     */
+    public static int getRandom(int x) {
+        return (int) (Math.random() * x);
+    }
+
+    /**
+     * 获取x-y之间的随机数（不包括y）
+     * 2024/9/1 22:11
+     * @return double
+     */
+    public static int getRandom(int x, int y) {
+        return (int)(Math.random() * (y - x) + x);
+    }
 
 }
