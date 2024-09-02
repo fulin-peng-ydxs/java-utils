@@ -1,7 +1,6 @@
 package basic.clazz;
 
 import basic.string.StringUtils;
-
 import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -105,6 +104,10 @@ public class ClassUtils {
         }
     }
 
+    public static  <T> T getFieldValue(Field field, Object value){
+        return getFieldValue(field.getName(), value,null);
+    }
+
     /**
      * 设置字段值
      * 2023/12/7 0007 16:20
@@ -171,9 +174,9 @@ public class ClassUtils {
 
     /**
      * 获取枚举对象
+     * 2023/12/23 17:10
      * @param enumType 枚举的class对象
      * @param enumValue 枚举值的字符串
-     * 2023/12/23 17:10
      * @author pengshuaifeng
      */
     public static  <T extends Enum<T>> T getEnum(Class<T> enumType, String enumValue){
@@ -193,11 +196,11 @@ public class ClassUtils {
     }
 
     /**
-     * 查找字段
+     * 获取字段集合
+     * 2023/12/24 22:54
      * @param clazz 类对象
      * @param  needSupper 是否需要包含父对象
-     * @param  fields 属性集合
-     * 2023/12/24 22:54
+     * @param  fields 字段集合
      * @author pengshuaifeng
      */
     public static List<Field> getFields(Class<?> clazz,boolean needSupper,List<Field> fields){
@@ -214,10 +217,25 @@ public class ClassUtils {
     }
 
     /**
+     * 获取字段
+     * 2023/12/24 22:54
+     * @param clazz 类对象
+     * @param  fieldName 字段名称
+     * @author pengshuaifeng
+     */
+    public static Field getField(Class<?> clazz,String fieldName){
+        try {
+            return clazz.getDeclaredField(fieldName);
+        } catch (Exception e) {
+            throw new RuntimeException("获取字段异常",e);
+        }
+    }
+
+    /**
      * 类型是否一致
+     * 2023/12/24 23:20
      * @param clazz1 同类或子类
      * @param clazz2 同类或父类
-     * 2023/12/24 23:20
      * @author pengshuaifeng
      */
     public static boolean typeEquals(Class<?> clazz1,Class<?> clazz2){
