@@ -3,6 +3,7 @@ package basic.clazz;
 import basic.string.StringUtils;
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -20,11 +21,30 @@ public class ClassUtils {
      * @return 返回类型集合
      */
     public static List<Class<?>> getParamTypes(Class<?> source){
-        List<Class<?>> paramTypes=null;
         Type genericSuperclass = source.getGenericSuperclass();
-        if(genericSuperclass instanceof ParameterizedType){
+        return getActualTypeArguments(genericSuperclass);
+    }
+
+    /**
+     * 获取参数的泛型
+     * 2024/9/4 上午11:02
+     * @author fulin-peng
+     */
+    public static List<Class<?>> getParamTypes(Parameter parameter){
+        Type genericSuperclass = parameter.getParameterizedType();
+        return getActualTypeArguments(genericSuperclass);
+    }
+
+    /**
+     * 获取泛型
+     * 2024/9/4 上午11:08
+     * @author fulin-peng
+     */
+    public static List<Class<?>> getActualTypeArguments(Type type){
+        List<Class<?>> paramTypes= Collections.emptyList();
+        if(type instanceof ParameterizedType){
             paramTypes=new LinkedList<>();
-            for (Type typeArgument : ((ParameterizedType) genericSuperclass).getActualTypeArguments()) {
+            for (Type typeArgument : ((ParameterizedType) type).getActualTypeArguments()) {
                 paramTypes.add((Class<?>)typeArgument);
             }
         }
@@ -137,6 +157,38 @@ public class ClassUtils {
     }
 
     /**
+     * 设置值：多级字段
+     * 2024/9/3 下午6:02
+     * @param fieldName 字段名 xx.xx.~
+     * @param value 对象
+     * @author fulin-peng
+     */
+    public static void setFieldValueWithMultistage(String fieldName,Object fieldValue,Object value){
+        try {
+            if(fieldName.contains(".")){
+                String[] fieldNames = fieldName.split("\\.");
+                Object temp=value;
+                Object target=value;
+                for (int i = 0; i < fieldNames.length; i++) {
+                    temp=getFieldValue(fieldNames[i], temp);
+                    if(temp==null)  //属性为空直接返回
+                        break;
+                    if(i==fieldNames.length-1) {  //最后一个属性
+                        setFieldValue(fieldNames[i],fieldValue,target);
+                    }else if(i<=fieldNames.length-2){  //直到倒数二个
+                        target=temp;
+                    }
+                }
+            }else{
+                Field field = value.getClass().getDeclaredField(fieldName);
+                setFieldValue(field,fieldValue,value);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("设置字段异常",e);
+        }
+    }
+
+    /**
      * 获取方法
      * 2024/8/20 下午4:55
      * @author fulin-peng
@@ -160,6 +212,9 @@ public class ClassUtils {
     /**
      * 调用方法
      * 2024/8/20 下午4:58
+     * @param source 方法调用对象，静态方法为null
+     * @param method 要调用的方法对象
+     * @param args 方法参数对象
      * @author fulin-peng
      */
     public static <T> T invokeMethod(Object source,Method method,Object... args){
