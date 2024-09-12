@@ -211,7 +211,7 @@ public abstract class HttpClientUtils {
      */
     public static <T> T executeUpload(String url, InputStream inputStream,Map<String,String> headers,Class<T> targetType,
                                       String targetName,String statusName, String statusValue, String errorName, String fileName) throws Exception {
-        return executeMutilPart(url,null,headers,targetType,targetName,statusName,statusValue,errorName,inputStream,fileName);
+        return executeMultipart(url,null,headers,targetType,targetName,statusName,statusValue,errorName,inputStream,fileName);
     }
 
     /**
@@ -219,7 +219,7 @@ public abstract class HttpClientUtils {
      * 2023/11/28 0028 11:05
      * @author fulin-peng
      */
-    public static <T> T executeMutilPart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+    public static <T> T executeMultipart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
                                          String targetName,String statusName, String statusValue, String errorName,
                                          InputStream fileInputStream,String fileName) throws Exception {
         try (CloseableHttpClient httpClient = createHttpClient(true)) {
@@ -260,9 +260,9 @@ public abstract class HttpClientUtils {
         }
     }
 
-    public static <T> T executeMutilPart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
+    public static <T> T executeMultipart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
                                          String targetName,String statusName, String statusValue, String errorName) throws Exception {
-        return executeMutilPart(url,params,headers,targetType,targetName,statusName,statusValue,errorName,null,null);
+        return executeMultipart(url,params,headers,targetType,targetName,statusName,statusValue,errorName,null,null);
     }
 
 
