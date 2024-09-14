@@ -47,7 +47,7 @@ public class IoUtils {
      * 2024/6/8 0008 10:34
      * @author fulin-peng
      */
-    private static byte[] toByteArray(InputStream input) throws IOException {
+    public static byte[] toByteArray(InputStream input) throws IOException {
         return inToByteArrayOutStream(input, 0).toByteArray();
     }
 }
