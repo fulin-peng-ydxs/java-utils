@@ -1,7 +1,5 @@
 package basic.math;
 
-import com.oracle.tools.packager.mac.MacBaseInstallerBundler;
-
 import java.text.DecimalFormat;
 
 /**
