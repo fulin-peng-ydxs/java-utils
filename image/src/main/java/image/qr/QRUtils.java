@@ -31,7 +31,7 @@ public class QRUtils {
      * @param errorCorrectionLevel 二维码纠错级别
      * @param logo 二维码中心图标 类型可以为Path或InputStream
      * @param formatName 二维码图片格式：JPG、PNG等
-     * @param target 二维码输出目标：类型可以为Path或InputStream
+     * @param target 二维码输出目标：类型可以为Path或OutputStream
      * 2024/9/20 上午9:43
      * @author fulin-peng
      */
