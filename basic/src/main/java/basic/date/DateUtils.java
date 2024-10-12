@@ -376,6 +376,13 @@ public class DateUtils {
         return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
+    /**
+     * LocalDateTime转时间戳
+     */
+    public static long localDateTimeToTimestamp(LocalDateTime localDateTime){
+        return localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
 
     public enum DateUnitType {
         SECOND,
