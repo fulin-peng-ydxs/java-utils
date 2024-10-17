@@ -1,6 +1,8 @@
 package basic.clazz;
 
 import basic.string.StringUtils;
+
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.Collections;
@@ -284,6 +286,42 @@ public class ClassUtils {
         } catch (Exception e) {
             throw new RuntimeException("获取字段异常",e);
         }
+    }
+
+    /**
+     * 类是否含注解
+     * 2024/10/17 下午5:41
+     * @author fulin-peng
+     */
+    public static boolean hasAnnotation(Class<?> clazz,Class<? extends Annotation> annotation){
+        return getAnnotation(clazz,annotation) != null;
+    }
+
+    /**
+     * 字段是否含注解
+     * 2024/10/17 下午5:41
+     * @author fulin-peng
+     */
+    public static boolean hasAnnotation(Field field,Class<? extends Annotation> annotation){
+        return getAnnotation(field,annotation) != null;
+    }
+
+    /**
+     * 获取类注解
+     * 2024/10/17 下午5:41
+     * @author fulin-peng
+     */
+    public static  <A extends Annotation> A  getAnnotation(Class<?> clazz,Class<A> annotation){
+        return clazz.getAnnotation(annotation);
+    }
+
+    /**
+     * 获取字段注解
+     * 2024/10/17 下午5:41
+     * @author fulin-peng
+     */
+    public static  <A extends Annotation> A  getAnnotation(Field field,Class<A> annotation){
+        return field.getAnnotation(annotation);
     }
 
     /**
