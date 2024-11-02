@@ -152,5 +152,7 @@ public class FileUtils {
         return fileToString(reader, false, false, null);
     }
 
-
+    public static String fileToString(Reader reader,String codeBr){
+        return fileToString(reader, false, false, codeBr);
+    }
 }
