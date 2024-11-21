@@ -12,6 +12,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -84,7 +85,7 @@ public abstract class HttpClientUtils {
     public static  <T> T execute(HttpClient httpClient,RequestType requestType, String url, Map<String,Object> params,Map<String,String> headers, Class<T> targetType,
                                  String targetName, String statusName, String statusValue, String errorName) throws Exception {
         HttpUriRequest httpRequest=null;
-        if(requestType== RequestType.GET){  //GET请求
+        if(requestType!= RequestType.POST){  //GET、DELETE等
             //请求url参数添加
             if(params!=null&& !params.isEmpty()){
                 StringBuilder urlBuilder=new StringBuilder(url);
@@ -96,9 +97,15 @@ public abstract class HttpClientUtils {
                 });
                 url=urlBuilder.substring(0,urlBuilder.length()-1);
             }
-            log.debug("HttpClient-Get调用服务：{}",url);
-            httpRequest= new HttpGet(url);
-        }else{ //POST&其他请求
+            log.debug("HttpClient-调用服务：{}",url);
+            switch (requestType){
+                case GET:
+                    httpRequest= new HttpGet(url);
+                    break;
+                case DELETE:
+                    httpRequest= new HttpDelete(url);
+            }
+        }else{ //POST等
             String contentType =null;
             boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.contains(MimeType.APPLICATION_JSON);
             HttpPost httpPost= new HttpPost(url);
@@ -110,12 +117,12 @@ public abstract class HttpClientUtils {
                     params.forEach((key,value)->{
                         urlParameters.add(new BasicNameValuePair(key, value.toString()));
                     });
-                    log.debug("HttpClient-Post(UrlEncodedForm)调用服务：url:{},params:{}",url,urlParameters);
+                    log.debug("HttpClient-(UrlEncodedForm)调用服务：url:{},params:{}",url,urlParameters);
                     httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
                 }
             }else {
                 String paramJson = JsonUtils.getString(params);
-                log.debug("HttpClient-Post(Json)调用服务：url:{},params:{}",url,paramJson);
+                log.debug("HttpClient-(Json)调用服务：url:{},params:{}",url,paramJson);
                 httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
                 //设置请求头
                 httpPost.setHeader("Content-Type",MimeType.APPLICATION_JSON);
@@ -386,7 +393,8 @@ public abstract class HttpClientUtils {
      */
     public enum RequestType{
         GET,
-        POST
+        POST,
+        DELETE
     }
 
     /**
