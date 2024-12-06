@@ -3,11 +3,9 @@ package basic.file;
 
 import basic.collection.CollectionUtils;
 import basic.string.StringUtils;
-
 import javax.swing.filechooser.FileSystemView;
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * 文件工具
@@ -154,5 +152,52 @@ public class FileUtils {
 
     public static String fileToString(Reader reader,String codeBr){
         return fileToString(reader, false, false, codeBr);
+    }
+    
+    /**
+     * 获取目录文件集
+     * 2024/12/6 上午9:43 
+     * @author fulin-peng
+     */
+    public static List<File> getFiles(String path){
+        File file = new File(path);
+        if(!file.exists())
+            return null;
+        File[] files = file.listFiles();
+        return files==null?null:Arrays.asList(files);
+    }
+
+    /**
+     * 获取目录文件集: 根据文件名排序
+     * @param path 目录路径
+     * @param reversed 是否倒序
+     * 2024/12/6 上午9:43
+     * @author fulin-peng
+     */
+    public static List<File> getFilesByNameSort(String path,boolean reversed){
+        List<File> files = getFiles(path);
+        //根据名称排序
+        if(files!=null){
+            Comparator<File> comparing = Comparator.comparing(File::getName);
+            files.sort(reversed?comparing.reversed():comparing);
+        }
+        return files;
+    }
+
+    /**
+     * 获取目录文件集: 根据最新修改时间排序
+     * @param path 目录路径
+     * @param reversed 是否倒序
+     * 2024/12/6 上午9:43
+     * @author fulin-peng
+     */
+    public static List<File> getFilesByLastModified(String path,boolean reversed){
+        List<File> files = getFiles(path);
+        //根据时间排序:倒序
+        if(files!=null){
+            Comparator<File> comparing = Comparator.comparing(File::lastModified);
+            files.sort(reversed?comparing.reversed():comparing);
+        }
+        return files;
     }
 }
