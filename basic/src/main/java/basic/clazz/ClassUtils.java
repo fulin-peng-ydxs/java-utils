@@ -105,20 +105,14 @@ public class ClassUtils {
     public static  <T> T getFieldValue(String fieldName,Object value,Class<T> filedType){
         try {
             Field field = value.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return (T)field.get(value);
+            return getFieldValue(field,value,filedType);
         } catch (Exception e) {
             throw new RuntimeException("获取字段异常",e);
         }
     }
 
     public static  <T> T getFieldValue(Field field, Object value, Class<T> filedType){
-        return getFieldValue(field.getName(), value, filedType);
-    }
-
-    public static  <T> T getFieldValue(String fieldName,Object value){
         try {
-            Field field = value.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
             return (T)field.get(value);
         } catch (Exception e) {
@@ -127,7 +121,11 @@ public class ClassUtils {
     }
 
     public static  <T> T getFieldValue(Field field, Object value){
-        return getFieldValue(field.getName(), value,null);
+        return getFieldValue(field, value,null);
+    }
+
+    public static  <T> T getFieldValue(String fieldName,Object value){
+        return getFieldValue(fieldName, value, null);
     }
 
     /**
@@ -273,6 +271,10 @@ public class ClassUtils {
         return fields;
     }
 
+    public static List<Field> getFieldsAll(Class<?> clazz,List<Field> fields){
+        return getFields(clazz, true, fields);
+    }
+
     /**
      * 获取字段
      * 2023/12/24 22:54
@@ -284,6 +286,22 @@ public class ClassUtils {
         try {
             return clazz.getDeclaredField(fieldName);
         } catch (Exception e) {
+            throw new RuntimeException("获取字段异常",e);
+        }
+    }
+
+    public static Field getFieldAll(Class<?> clazz,String fieldName){
+        try {
+            return clazz.getDeclaredField(fieldName);
+        } catch (Exception e) {
+            try {
+                if(e instanceof  NoSuchFieldException){
+                    return getFieldsAll(clazz, null).stream().filter(field -> field.getName().equals(fieldName))
+                            .findFirst().orElseThrow(() ->new NoSuchFieldException(fieldName));
+                }
+            } catch (Exception ex) {
+                throw new RuntimeException("获取字段异常",ex);
+            }
             throw new RuntimeException("获取字段异常",e);
         }
     }
