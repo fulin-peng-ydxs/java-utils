@@ -1,9 +1,6 @@
 package basic.date;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import json.jackson.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
-import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -12,8 +9,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 /**
  * 时间工具类
  *
@@ -31,23 +26,6 @@ public class DateUtils {
 
     public static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern(defaultFormat);
 
-
-    //年度节假日数据
-    public static Map<String, Map<String, List<String>>> holidayData;
-
-    //数据加载
-    static {
-        try {
-            InputStream resourceAsStream = DateUtils.class.getResourceAsStream("/calendar.json");
-            holidayData = JsonUtils.getMap(resourceAsStream, new TypeReference<Map<String, Map<String, List<String>>>>() {});
-            if (resourceAsStream != null)
-                resourceAsStream.close();
-        } catch (Exception e) {
-            if(log.isTraceEnabled()){
-                log.error("加载假期数据失败",e);
-            }
-        }
-    }
 
     /**
      * 格式化时间
@@ -166,13 +144,13 @@ public class DateUtils {
         int dayNum=0;
         for (int i = 0; i < daysBetween; i++) {
             LocalDate currentDate = startLocalDate.plusDays(i);
-            if ((isWeekday(currentDate, currentDate.getYear()) || !onlyWorkDay) &&
+            if ((CalendarUtils.isWeekday(currentDate, currentDate.getYear()) || !onlyWorkDay) &&
                     ( (currentDate!=startLocalDate && !currentDate.toString().equals(endLocalDate.toString())) || containPointTime) )
                 dayNum++;
         }
         //2.2：是否也需要计算起止时间
-        boolean startDateWeekday = (isWeekday(startLocalDate, startLocalDate.getYear()) ||(!onlyWorkDay)) && containPointTime;
-        boolean endDateWeekday = (isWeekday(endLocalDate, endLocalDate.getYear()) ||(!onlyWorkDay)) && containPointTime;
+        boolean startDateWeekday = (CalendarUtils.isWeekday(startLocalDate, startLocalDate.getYear()) ||(!onlyWorkDay)) && containPointTime;
+        boolean endDateWeekday = (CalendarUtils.isWeekday(endLocalDate, endLocalDate.getYear()) ||(!onlyWorkDay)) && containPointTime;
         //起止时间的年、月、日、分
         Calendar cal = Calendar.getInstance();
         cal.setTime(startDate);
@@ -279,31 +257,6 @@ public class DateUtils {
     public static int timeDifference(Date startDate,Date endDate,int startHourIndex,int endHourIndex,int type){
         return timeDifference(startDate,endDate,startHourIndex,endHourIndex,type,true,true);
     }
-
-    /**是否为工作日
-     * 2023/2/16 0016-20:59
-     * @author pengfulin
-     * @param date 本地时间
-     * @param year 所在年
-     */
-    public static boolean isWeekday(LocalDate date, int year){
-        Map<String, List<String>> yearHoliday = holidayData.get(String.valueOf(year));
-        if(yearHoliday==null)
-            throw new RuntimeException("未加载到"+year+"的节假日数据");
-        List<String> holiday = yearHoliday.get("法定节假日");
-        List<String> shift = yearHoliday.get("法定补班日");
-        String ymd = format(date,"yyyy-MM-dd");
-        //是否为节假日：false
-        if(holiday.contains(ymd))
-            return false;
-        //是否为节假日补班：true
-        if(shift.contains(ymd))
-            return true;
-        //是否为周末：false
-        DayOfWeek dayOfWeek = date.getDayOfWeek();
-        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
-    }
-
 
     /**
      * Date转LocalDateTime
