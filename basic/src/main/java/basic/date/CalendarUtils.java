@@ -3,6 +3,8 @@ package basic.date;
 import com.fasterxml.jackson.core.type.TypeReference;
 import json.jackson.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -22,17 +24,25 @@ public class CalendarUtils {
 
     //数据加载
     static {
+        InputStream resourceAsStream = null;
         try {
-            InputStream resourceAsStream = DateUtils.class.getResourceAsStream("/calendar.json");
+            resourceAsStream = DateUtils.class.getResourceAsStream("/calendar.json");
             holidayData = JsonUtils.getMap(resourceAsStream, new TypeReference<Map<String, Map<String, List<String>>>>() {});
-            if (resourceAsStream != null)
-                resourceAsStream.close();
         } catch (Exception e) {
             if(log.isTraceEnabled()){
                 log.error("加载假期数据失败",e);
             }
+        } finally {
+            if (resourceAsStream != null) {
+                try {
+                    resourceAsStream.close();
+                } catch (IOException e) {
+                    log.error("关闭资源流失败", e);
+                }
+            }
         }
     }
+
 
     /**是否为工作日
      * 2023/2/16 0016-20:59
