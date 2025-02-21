@@ -5,10 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
+import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -284,7 +281,7 @@ public abstract class HttpClientUtils {
         Header contentType = response.getFirstHeader("Content-Type");
         HttpEntity entity = response.getEntity();
         //TODO 后续补充文件涉及的其他信息处理和类型判断完善，例如文件名、响应类型等
-        if(statusCode ==200 && contentType.getValue().contains(MimeType.APPLICATION_OCTET_STREAM)){ //文件流
+        if(responseIsNormal(statusCode) && contentType.getValue().contains(MimeType.APPLICATION_OCTET_STREAM)){ //文件流
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -310,7 +307,7 @@ public abstract class HttpClientUtils {
         }
         String responseJson = EntityUtils.toString(entity, "UTF-8");
         log.debug("HttpClient调用结果：{}",responseJson);
-        if(statusCode!=200)
+        if(!responseIsNormal(statusCode) )
             throw new RuntimeException("远程服务调用异常："+responseJson);
         //如果targetName&statusName均为空，则直接将响应结果转换成targetType类型直接返回
         if(targetName==null&&statusName==null)
@@ -385,6 +382,19 @@ public abstract class HttpClientUtils {
         return (data == null || data.equals("null") || data.equals("{}") || data.equals("[]"));
     }
 
+    /**
+     * 请求是否正常
+     * 2025/2/20 下午8:47
+     * @author fulin-peng
+     */
+    public static boolean responseIsNormal(HttpResponse response){
+        int statusCode = response.getStatusLine().getStatusCode();
+        return responseIsNormal(statusCode);
+    }
+
+    public static boolean responseIsNormal(int  statusCode){
+        return statusCode != HttpStatus.SC_NOT_FOUND && statusCode != HttpStatus.SC_INTERNAL_SERVER_ERROR;
+    }
 
     /**
      * 请求类型
