@@ -7,13 +7,18 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.*;
+import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.ConnectionKeepAliveStrategy;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -21,222 +26,371 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.message.BasicHeaderElementIterator;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
+
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
- * httpclient调用工具类
+ * HTTP客户端工具类，提供同步和异步HTTP请求功能
  *
- * @author peng_fu_lin
- * 2023-06-15 14:51
+ * @author pengshuaifeng
+ * @since 2023/6/15
  */
 @Slf4j
 public abstract class HttpClientUtils {
 
-    /**通用请求执行
-     * 2023/6/15 0015-14:53
-     * @author pengfulin
-     * @param requestType 请求方法
-     * @param url 请求地址
-     * @param params 请求参数
-     * @param headers 请求头
-     * @param targetType 请求结果类型
-     * @param targetName 请求响应结果中的结果集属性名
-     * @param statusName 请求响应结果中的结果状态属性名
-     * @param statusValue 请求响应结果中的正常结果状态值
-     * @param errorName 请求响应结果中的错误消息属性名
-     */
-    public static  <T> T execute(RequestType requestType, String url, Map<String,Object> params,Map<String,String> headers, Class<T> targetType,
-                                 String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        try (CloseableHttpClient httpClient = createHttpClient(true)) {
-            return execute(httpClient,requestType,url,params,headers,targetType,targetName,statusName,statusValue,errorName);
+    private HttpClientUtils() {
+        // Utility class should not be instantiated
+    }
+
+    /** 默认配置 */
+    private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
+    private static final int DEFAULT_SOCKET_TIMEOUT = 10000;
+    private static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 3000;
+    private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 200;
+    private static final int DEFAULT_MAX_PER_ROUTE_CONNECTIONS = 20;
+    private static final int DEFAULT_KEEP_ALIVE_TIME = 20000;
+    private static final int DEFAULT_RETRY_COUNT = 3;
+    private static final int DEFAULT_RETRY_INTERVAL = 1000;
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+
+    /** 连接池管理器 */
+    private static final PoolingHttpClientConnectionManager connectionManager;
+
+    /** 异步HTTP客户端 */
+    private static final CloseableHttpAsyncClient asyncHttpClient;
+
+    static {
+        try {
+            // SSL配置
+            SSLContext sslContext = SSLContextBuilder.create()
+                    .loadTrustMaterial((chain, authType) -> true)
+                    .build();
+            SSLConnectionSocketFactory sslFactory = new SSLConnectionSocketFactory(
+                    sslContext, NoopHostnameVerifier.INSTANCE);
+
+            // 注册HTTP和HTTPS协议
+            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                    .register("https", sslFactory)
+                    .build();
+
+            // 初始化连接池
+            connectionManager = new PoolingHttpClientConnectionManager(registry);
+            connectionManager.setMaxTotal(DEFAULT_MAX_TOTAL_CONNECTIONS);
+            connectionManager.setDefaultMaxPerRoute(DEFAULT_MAX_PER_ROUTE_CONNECTIONS);
+
+            // 初始化异步客户端
+            asyncHttpClient = HttpAsyncClients.custom()
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                    .build();
+            asyncHttpClient.start();
+
+            // 启动空闲连接清理
+            startIdleConnectionMonitor();
+        } catch (Exception e) {
+            throw new RuntimeException("初始化HTTP客户端失败", e);
         }
     }
 
     /**
-     * 通用请求执行
-     * 2023/8/3 0003 11:33
-     * @author fulin peng
-     * @author httpClient 使用自定义的httpclient对象
-     * @param httpClient 请求客户端
-     * @param requestType 请求方法
-     * @param url 请求地址
-     * @param params 请求参数
-     * @param headers 请求头
-     * @param targetType 请求结果类型
-     * @param targetName 请求响应结果中的结果集属性名
-     * @param statusName 请求响应结果中的结果状态属性名
-     * @param statusValue 请求响应结果中的正常结果状态值
-     * @param errorName 请求响应结果中的错误消息属性名
+     * 创建HTTP客户端
      */
-    public static  <T> T execute(HttpClient httpClient,RequestType requestType, String url, Map<String,Object> params,Map<String,String> headers, Class<T> targetType,
-                                 String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        HttpUriRequest httpRequest=null;
-        if(requestType!= RequestType.POST){  //GET、DELETE等
-            //请求url参数添加
-            if(params!=null&& !params.isEmpty()){
-                StringBuilder urlBuilder=new StringBuilder(url);
-                if (url.lastIndexOf("?")<0) {
-                    urlBuilder.append("?");
+    public static CloseableHttpClient createHttpClient() {
+        return createHttpClient(true, createDefaultRequestConfig());
+    }
+
+    /**
+     * 创建HTTP客户端
+     * @param ignoreSSL 是否忽略SSL证书验证
+     * @param requestConfig 请求配置
+     */
+    public static CloseableHttpClient createHttpClient(boolean ignoreSSL, RequestConfig requestConfig) {
+        try {
+            HttpClientBuilder builder = HttpClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .setDefaultRequestConfig(requestConfig)
+                    .setKeepAliveStrategy(createKeepAliveStrategy())
+                    .setRetryHandler(createRetryHandler());
+
+            if (ignoreSSL) {
+                SSLContext sslContext = SSLContextBuilder.create()
+                        .loadTrustMaterial((chain, authType) -> true)
+                        .build();
+                builder.setSSLContext(sslContext)
+                       .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+            }
+
+            return builder.build();
+        } catch (Exception e) {
+            throw new RuntimeException("创建HTTP客户端失败", e);
+        }
+    }
+
+    /**
+     * 创建默认请求配置
+     */
+    private static RequestConfig createDefaultRequestConfig() {
+        return RequestConfig.custom()
+                .setConnectTimeout(DEFAULT_CONNECT_TIMEOUT)
+                .setSocketTimeout(DEFAULT_SOCKET_TIMEOUT)
+                .setConnectionRequestTimeout(DEFAULT_CONNECTION_REQUEST_TIMEOUT)
+                .build();
+    }
+
+    /**
+     * 创建Keep-Alive策略
+     */
+    private static ConnectionKeepAliveStrategy createKeepAliveStrategy() {
+        return (response, context) -> {
+            HeaderElementIterator it = new BasicHeaderElementIterator(
+                    response.headerIterator(HTTP.CONN_KEEP_ALIVE));
+            while (it.hasNext()) {
+                HeaderElement he = it.nextElement();
+                String param = he.getName();
+                String value = he.getValue();
+                if (value != null && param.equalsIgnoreCase("timeout")) {
+                    return Long.parseLong(value) * 1000;
                 }
-                params.forEach((key,value)->{
-                    urlBuilder.append(key).append("=").append(value).append("&");
-                });
-                url=urlBuilder.substring(0,urlBuilder.length()-1);
             }
-            log.debug("HttpClient-调用服务：{}",url);
-            switch (requestType){
-                case GET:
-                    httpRequest= new HttpGet(url);
-                    break;
-                case DELETE:
-                    httpRequest= new HttpDelete(url);
+            return DEFAULT_KEEP_ALIVE_TIME;
+        };
+    }
+
+    /**
+     * 创建重试处理器
+     */
+    private static HttpRequestRetryHandler createRetryHandler() {
+        return (exception, executionCount, context) -> {
+            if (executionCount >= DEFAULT_RETRY_COUNT) {
+                return false;
             }
-        }else{ //POST等
-            String contentType =null;
-            boolean isNotJson=headers!=null && (contentType = headers.get("Content-Type"))!=null && !contentType.contains(MimeType.APPLICATION_JSON);
-            HttpPost httpPost= new HttpPost(url);
-            httpRequest= httpPost;
-            if(isNotJson) {
-                if (contentType.contains(MimeType.URL_ENCODED_FORM)) {  //url编码表单处理
-                    // 添加请求参数
-                    List<NameValuePair> urlParameters = new ArrayList<>();
-                    params.forEach((key,value)->{
-                        urlParameters.add(new BasicNameValuePair(key, value.toString()));
-                    });
-                    log.debug("HttpClient-(UrlEncodedForm)调用服务：url:{},params:{}",url,urlParameters);
-                    httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
+            try {
+                Thread.sleep(DEFAULT_RETRY_INTERVAL);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+            return true;
+        };
+    }
+
+    /**
+     * 启动空闲连接监控
+     */
+    private static void startIdleConnectionMonitor() {
+        Thread monitor = new Thread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    synchronized (connectionManager) {
+                        connectionManager.closeExpiredConnections();
+                        connectionManager.closeIdleConnections(30, TimeUnit.SECONDS);
+                    }
+                    Thread.sleep(5000);
                 }
-            }else {
-                String paramJson = JsonUtils.getString(params);
-                log.debug("HttpClient-(Json)调用服务：url:{},params:{}",url,paramJson);
-                httpPost.setEntity(new StringEntity(paramJson, StandardCharsets.UTF_8));
-                //设置请求头
-                httpPost.setHeader("Content-Type",MimeType.APPLICATION_JSON);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
+        });
+        monitor.setDaemon(true);
+        monitor.start();
+    }
+
+    /**
+     * 异步执行HTTP请求
+     */
+    public static <T> CompletableFuture<T> executeAsync(RequestType requestType, String url,
+            Map<String, Object> params, Map<String, String> headers, Class<T> targetType,
+            String targetName, String statusName, String statusValue, String errorName) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        try {
+            HttpUriRequest request = createRequest(requestType, url, params, headers);
+            asyncHttpClient.execute(request, new FutureCallback<HttpResponse>() {
+                @Override
+                public void completed(HttpResponse result) {
+                    try {
+                        T response = abstractResponse(result, targetType, targetName, 
+                            statusName, statusValue, errorName);
+                        future.complete(response);
+                    } catch (Exception e) {
+                        future.completeExceptionally(e);
+                    }
+                }
+
+                @Override
+                public void failed(Exception ex) {
+                    future.completeExceptionally(ex);
+                }
+
+                @Override
+                public void cancelled() {
+                    future.cancel(true);
+                }
+            });
+        } catch (Exception e) {
+            future.completeExceptionally(e);
         }
-        if(headers!=null){
-            for (Map.Entry<String,String> headersEntry : headers.entrySet()) {
-                httpRequest.setHeader(headersEntry.getKey(),headersEntry.getValue());
-            }
-            log.debug("HttpClient-调用服务头信息：headers:{}",headers);
+        return future;
+    }
+
+    /**
+     * 创建HTTP请求
+     */
+    private static HttpUriRequest createRequest(RequestType requestType, String url,
+            Map<String, Object> params, Map<String, String> headers) throws Exception {
+        HttpUriRequest request;
+        
+        switch (requestType) {
+            case GET:
+                request = new HttpGet(buildUrlWithParams(url, params));
+                break;
+            case POST:
+                HttpPost post = new HttpPost(url);
+                setEntityForPost(post, params, headers);
+                request = post;
+                break;
+            case PUT:
+                HttpPut put = new HttpPut(url);
+                setEntityForPost(put, params, headers);
+                request = put;
+                break;
+            case DELETE:
+                request = new HttpDelete(buildUrlWithParams(url, params));
+                break;
+            case PATCH:
+                HttpPatch patch = new HttpPatch(url);
+                setEntityForPost(patch, params, headers);
+                request = patch;
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的请求类型: " + requestType);
         }
-        //执行请求
-        return abstractResponse(httpClient.execute(httpRequest),targetType,targetName,statusName,statusValue,errorName);
-    }
 
+        // 设置请求头
+        if (headers != null) {
+            headers.forEach(request::setHeader);
+        }
 
-    /**
-     * Post请求执行
-     * 2023/10/15 23:40
-     * @return 以json字符串方式返回响应信息
-     * @author pengshuaifeng
-     */
-    public static String executePost(String url, Map<String,Object> params,Map<String,String> headers,
-                                     String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        return execute(RequestType.POST, url, params, headers,String.class,targetName, statusName, statusValue, errorName);
+        return request;
     }
 
     /**
-     * Post请求执行
-     * 2023/10/15 23:40
-     * @return targetType类型的对象
-     * @author pengshuaifeng
+     * 为POST类请求设置实体
      */
-    public static <T> T executePost(String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                    String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        return execute(RequestType.POST, url, params, headers,targetType,targetName, statusName, statusValue, errorName);
-    }
+    private static void setEntityForPost(HttpEntityEnclosingRequestBase request,
+            Map<String, Object> params, Map<String, String> headers) throws Exception {
+        if (params == null || params.isEmpty()) {
+            return;
+        }
 
-    /**
-     * url编码表单请求
-     * 2023/11/28 0028 11:05
-     * @author fulin-peng
-     */
-    public static <T> T executeUrlEncodedForm(String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                              String targetName,String statusName, String statusValue, String errorName) throws Exception {
-        try(CloseableHttpClient httpClient = createHttpClient(true)){
-            return executeUrlEncodedForm(httpClient,url, params,headers,targetType,targetName, statusName, statusValue, errorName);
+        String contentType = headers != null ? headers.get("Content-Type") : null;
+        if (contentType != null && contentType.contains(MimeType.URL_ENCODED_FORM)) {
+            List<NameValuePair> parameters = new ArrayList<>();
+            params.forEach((key, value) -> 
+                parameters.add(new BasicNameValuePair(key, String.valueOf(value))));
+            request.setEntity(new UrlEncodedFormEntity(parameters, StandardCharsets.UTF_8));
+        } else {
+            String jsonParams = JsonUtils.getString(params);
+            request.setEntity(new StringEntity(jsonParams, StandardCharsets.UTF_8));
+            request.setHeader("Content-Type", MimeType.APPLICATION_JSON);
         }
     }
 
-    public static <T> T executeUrlEncodedForm(HttpClient httpClient,String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                              String targetName,String statusName, String statusValue, String errorName) throws Exception {
-        if(headers==null)
-            headers= new HashMap<>();
-        headers.put("Content-Type", MimeType.URL_ENCODED_FORM);
-        return execute(httpClient,RequestType.POST, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
-    }
-
-
     /**
-     * Get请求执行
-     * 2023/10/15 23:40
-     * @return 以json字符串方式返回响应信息
-     * @author pengshuaifeng
+     * 构建带参数的URL
      */
-    public static String executeGET(String url, Map<String,Object> params,Map<String,String> headers,
-                                    String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        return execute(RequestType.GET, url, params,headers,String.class,targetName, statusName, statusValue, errorName);
-    }
-    /**
-     * Get请求执行
-     * 2023/10/15 23:40
-     * @return targetType类型的对象
-     * @author pengshuaifeng
-     */
-    public static <T> T executeGET(String url, Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                   String targetName, String statusName, String statusValue, String errorName) throws Exception {
-        return execute(RequestType.GET, url, params,headers,targetType,targetName, statusName, statusValue, errorName);
-    }
+    private static String buildUrlWithParams(String url, Map<String, Object> params) {
+        if (params == null || params.isEmpty()) {
+            return url;
+        }
 
-    /**文件请求上传
-     * 2023/6/15 0015-14:54
-     * @author pengfulin
-     * @param url 请求地址
-     * @param inputStream 文件流
-     * @param headers 请求头
-     * @param targetType 需要的请求结果类型
-     * @param targetName 请求响应结果中的结果集属性名
-     * @param statusName 请求响应结果中的结果状态属性名
-     * @param statusValue 请求响应结果中的正常结果状态值
-     * @param errorName 请求响应结果中的错误消息属性名
-     * @return targetType类型的对象
-     */
-    public static <T> T executeUpload(String url, InputStream inputStream,Map<String,String> headers,Class<T> targetType,
-                                      String targetName,String statusName, String statusValue, String errorName, String fileName) throws Exception {
-        return executeMultipart(url,null,headers,targetType,targetName,statusName,statusValue,errorName,inputStream,fileName);
+        StringBuilder builder = new StringBuilder(url);
+        if (!url.contains("?")) {
+            builder.append("?");
+        } else if (!url.endsWith("&")) {
+            builder.append("&");
+        }
+
+        params.forEach((key, value) -> 
+            builder.append(key).append("=").append(value).append("&"));
+        return builder.substring(0, builder.length() - 1);
     }
 
     /**
-     * 多部分请求
-     * 2023/11/28 0028 11:05
-     * @author fulin-peng
+     * 执行HTTP请求
      */
-    public static <T> T executeMultipart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                         String targetName,String statusName, String statusValue, String errorName,
-                                         InputStream fileInputStream,String fileName) throws Exception {
-        try (CloseableHttpClient httpClient = createHttpClient(true)) {
+    public static <T> T execute(RequestType requestType, String url, Map<String, Object> params,
+            Map<String, String> headers, Class<T> targetType, String targetName, String statusName,
+            String statusValue, String errorName) throws Exception {
+        try (CloseableHttpClient httpClient = createHttpClient()) {
+            return execute(httpClient, requestType, url, params, headers, targetType,
+                    targetName, statusName, statusValue, errorName);
+        }
+    }
+
+    /**
+     * 使用指定客户端执行HTTP请求
+     */
+    public static <T> T execute(HttpClient httpClient, RequestType requestType, String url,
+            Map<String, Object> params, Map<String, String> headers, Class<T> targetType,
+            String targetName, String statusName, String statusValue, String errorName) throws Exception {
+        HttpUriRequest request = createRequest(requestType, url, params, headers);
+        log.debug("HTTP请求: {} {}", requestType, url);
+        if (params != null) {
+            log.debug("请求参数: {}", params);
+        }
+        if (headers != null) {
+            log.debug("请求头: {}", headers);
+        }
+        return abstractResponse(httpClient.execute(request), targetType, targetName,
+                statusName, statusValue, errorName);
+    }
+
+    /**
+     * 执行文件上传请求
+     */
+    public static <T> T executeUpload(String url, InputStream inputStream,
+            Map<String, String> headers, Class<T> targetType, String targetName,
+            String statusName, String statusValue, String errorName, String fileName) throws Exception {
+        return executeMultipart(url, null, headers, targetType, targetName,
+                statusName, statusValue, errorName, inputStream, fileName);
+    }
+
+    /**
+     * 执行多部分请求
+     */
+    public static <T> T executeMultipart(String url, Map<String, Object> params,
+            Map<String, String> headers, Class<T> targetType, String targetName,
+            String statusName, String statusValue, String errorName,
+            InputStream fileInputStream, String fileName) throws Exception {
+        try (CloseableHttpClient httpClient = createHttpClient()) {
             HttpPost httpPost = new HttpPost(url);
-            //设置请求头
-            if(headers!=null){
-                for (Map.Entry<String,String> headersEntry : headers.entrySet()) {
-                    httpPost.setHeader(headersEntry.getKey(),headersEntry.getValue());
-                }
+            
+            if (headers != null) {
+                headers.forEach(httpPost::setHeader);
             }
-            //设置请求体：多部分数据构建
-            MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-            if(fileInputStream!=null){
+
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+                    .setMode(HttpMultipartMode.BROWSER_COMPATIBLE) //设置请求体模式：浏览器兼容模式，即只写"Content-Disposition";使用内容字符集
+                    .setCharset(StandardCharsets.UTF_8); //设置请求体字符集
+
+            if (fileInputStream != null) {
                 //添加参数：文件，并设置数据类型：二进制类型
                 /*application/octet-stream 是一种 MIME 类型（Multipurpose Internet Mail Extensions），它通常用于表示二进制数据文件的内容类型。
                 这个 MIME 类型没有特定的数据格式或结构，它通常用于指示数据是未知的、不可解释的二进制数据。
@@ -244,191 +398,173 @@ public abstract class HttpClientUtils {
                 当您收到一个 HTTP 响应，其内容类型被标记为 application/octet-stream 时，这意味着服务器正在传输二进制数据，但它不提供有关数据内容的详细信息。
                 通常，这种情况下，您需要根据您的应用程序的需要来处理这些数据，例如，将它们保存到文件或执行其他操作。
                 application/octet-stream 的主要作用是通知接收端，它不应该尝试解释数据内容，而应该将数据保存为原始的二进制形式。这对于传输各种文件和数据类型非常有用，因为它确保数据的完整性和保密性。*/
-                entityBuilder.addBinaryBody("file",fileInputStream,
-                        ContentType.APPLICATION_OCTET_STREAM,fileName);
+ 
+                builder.addBinaryBody("file", fileInputStream,
+                        ContentType.APPLICATION_OCTET_STREAM, fileName);
             }
-            //添加其他参数
-            if(params!=null){
-                params.forEach((key,value)->{
-                    entityBuilder.addBinaryBody(key,value.toString().getBytes(StandardCharsets.UTF_8));
-                });
+
+            if (params != null) {
+                params.forEach((key, value) -> builder.addBinaryBody(key,
+                        String.valueOf(value).getBytes(StandardCharsets.UTF_8)));
             }
-            //设置请求体模式：浏览器兼容模式，即只写"Content-Disposition";使用内容字符集
-            entityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-            //设置请求体字符集
-            entityBuilder.setCharset(StandardCharsets.UTF_8);
-            httpPost.setEntity(entityBuilder.build());
-            log.debug("HttpClient多部分请求调用服务：{}",url);
-            //执行请求
-            return abstractResponse(httpClient.execute(httpPost), targetType, targetName, statusName, statusValue, errorName);
+
+            httpPost.setEntity(builder.build());
+            log.debug("多部分请求: {}", url);
+            
+            return abstractResponse(httpClient.execute(httpPost), targetType,
+                    targetName, statusName, statusValue, errorName);
         }
     }
 
-    public static <T> T executeMultipart(String url,Map<String,Object> params,Map<String,String> headers,Class<T> targetType,
-                                         String targetName,String statusName, String statusValue, String errorName) throws Exception {
-        return executeMultipart(url,params,headers,targetType,targetName,statusName,statusValue,errorName,null,null);
-    }
-
-
-    /**响应解析
-     * 2023/6/15 0015-15:09
-     * @throws RuntimeException 如果响应状态不为200，则抛出响应信息
-     * @author pengfulin
+    /**
+     * 解析HTTP响应
      */
-    private static <T> T abstractResponse(HttpResponse response,Class<T> targetType, String targetName, String statusName, String statusValue, String errorName)
-            throws Exception{
+    private static <T> T abstractResponse(HttpResponse response, Class<T> targetType,
+            String targetName, String statusName, String statusValue, String errorName)
+            throws Exception {
         int statusCode = response.getStatusLine().getStatusCode();
         Header contentType = response.getFirstHeader("Content-Type");
         HttpEntity entity = response.getEntity();
-        //TODO 后续补充文件涉及的其他信息处理和类型判断完善，例如文件名、响应类型等
-        if(responseIsNormal(statusCode) && contentType.getValue().contains(MimeType.APPLICATION_OCTET_STREAM)){ //文件流
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = entity.getContent().read(buffer)) != -1) {
-                byteArrayOutputStream.write(buffer, 0, bytesRead);
-            }
-            if(targetType== ByteArrayOutputStream.class )
-                return (T) byteArrayOutputStream;
-            else{
-                FileResponse fileResponse = new FileResponse();
-                String contentDisposition = response.getFirstHeader("Content-Disposition").getValue();
-                if(contentDisposition!=null){
-                    String[] fileNames = contentDisposition.split(";");
-                    String fileName = fileNames[fileNames.length - 1].trim().replace("\"","");
-                    fileName=fileName.toLowerCase().startsWith("filename=") ? fileName.substring(9):null;
-                    if(fileName!=null){
-                        fileResponse.setFileName(URLDecoder.decode(fileName, "UTF-8"));
-                    }
+
+        if (responseIsNormal(statusCode) && contentType != null &&
+                contentType.getValue().contains(MimeType.APPLICATION_OCTET_STREAM)) {
+            return handleBinaryResponse(response, targetType);
+        }
+
+        String responseJson = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+        log.debug("HTTP响应: {}", responseJson);
+
+        if (!responseIsNormal(statusCode)) {
+            throw new RuntimeException("HTTP请求失败: " + responseJson);
+        }
+
+        if (targetName == null && statusName == null) {
+            return JsonUtils.getObject(responseJson, targetType);
+        }
+
+        return parseJsonResponse(responseJson, targetType, targetName,
+                statusName, statusValue, errorName);
+    }
+
+    /**
+     * 处理二进制响应
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T handleBinaryResponse(HttpResponse response, Class<T> targetType)
+            throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        response.getEntity().writeTo(outputStream);
+
+        if (targetType == ByteArrayOutputStream.class) {
+            return (T) outputStream;
+        }
+
+        FileResponse fileResponse = new FileResponse();
+        fileResponse.setContent(outputStream);
+
+        Header contentDisposition = response.getFirstHeader("Content-Disposition");
+        if (contentDisposition != null) {
+            String[] parts = contentDisposition.getValue().split(";");
+            for (String part : parts) {
+                part = part.trim();
+                if (part.toLowerCase().startsWith("filename=")) {
+                    String fileName = part.substring(9).replace("\"", "");
+                    fileResponse.setFileName(URLDecoder.decode(fileName, "UTF-8"));
+                    break;
                 }
-                fileResponse.setContent(byteArrayOutputStream);
-                return (T)fileResponse;
             }
         }
-        String responseJson = EntityUtils.toString(entity, "UTF-8");
-        log.debug("HttpClient调用结果：{}",responseJson);
-        if(!responseIsNormal(statusCode) )
-            throw new RuntimeException("远程服务调用异常："+responseJson);
-        //如果targetName&statusName均为空，则直接将响应结果转换成targetType类型直接返回
-        if(targetName==null&&statusName==null)
-            return JsonUtils.getObject(responseJson,targetType);
-        //否则，根据响应提供信息进一步解析响应信息
-        return abstractResponse(responseJson,targetType,targetName,statusName,statusValue,errorName);
+
+        return (T) fileResponse;
     }
 
     /**
-     * 响应解析
-     * 2023/10/16 00:25
-     * @throws RuntimeException 如果响应状态不为200，则抛出响应信息
-     * @author pengshuaifeng
+     * 解析JSON响应
      */
-    private static <T> T abstractResponse(String responseJson,Class<T> targetType, String targetName, String statusName, String statusValue, String errorName) {
-        Map<?,?> result = (Map<?,?>)JsonUtils.getObject(responseJson, Map.class);
-        Object resStatus = result.get(statusName);
-        if(resStatus==null|| resStatus.toString().isEmpty())
-            throw new RuntimeException("响应状态缺失："+responseJson);
-        else if(!resStatus.toString().equals(statusValue)){
-            String error =(String) result.get(errorName);
-            throw new RuntimeException("请求失败："+error);
+    private static <T> T parseJsonResponse(String responseJson, Class<T> targetType,
+            String targetName, String statusName, String statusValue, String errorName) {
+        Map<?, ?> result = JsonUtils.getObject(responseJson, Map.class);
+        
+        Object status = result.get(statusName);
+        if (status == null || status.toString().isEmpty()) {
+            throw new RuntimeException("响应状态缺失: " + responseJson);
         }
-        if(targetName==null)  //如果结果名为空，则解析null
+        
+        if (!status.toString().equals(statusValue)) {
+            String error = (String) result.get(errorName);
+            throw new RuntimeException("请求失败: " + error);
+        }
+
+        if (targetName == null) {
             return null;
-        if(targetName.equals("all-data"))  //如果结果名all-data，则解析整个响应信息
-            return JsonUtils.getObject(responseJson,targetType);
-        Object resData =result.get(targetName);
-        if(responseIsEmpty(resData))
-            throw new RuntimeException("响应数据缺失或为空："+responseJson);
-        return JsonUtils.getObject(resData,targetType);
-    }
-
-
-    /**
-     * 创建HttpClient
-     * 2023/10/18 01:45
-     * @param ignoreSSl 忽略证书，用于https协议不安全调用
-     * @author pengshuaifeng
-     */
-    public static CloseableHttpClient createHttpClient(boolean ignoreSSl) throws Exception{
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(5000)  // 响应超时 5 秒
-                .build();
-        return createHttpClient(ignoreSSl, requestConfig);
-    }
-
-
-    public static CloseableHttpClient createHttpClient(boolean ignoreSSl,RequestConfig requestConfig) throws Exception{
-        if(ignoreSSl){
-            // 创建不验证证书的 SSL 上下文
-            SSLContext sslContext = SSLContextBuilder.create()
-                    .loadTrustMaterial((chain, authType) -> true)
-                    .build();
-            // 创建 HttpClient，并禁用 SSL 验证
-            return HttpClients.custom()
-                    .setDefaultRequestConfig(requestConfig)
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                    .build();
-        }else{
-            return  HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
         }
+
+        if ("all-data".equals(targetName)) {
+            return JsonUtils.getObject(responseJson, targetType);
+        }
+
+        Object data = result.get(targetName);
+        if (responseIsEmpty(data)) {
+            throw new RuntimeException("响应数据为空: " + responseJson);
+        }
+
+        return JsonUtils.getObject(data, targetType);
     }
 
     /**
-     * 请求结果是否为空
-     * 2024/8/19 22:13
-     * @author pengshuaifeng
+     * 检查响应是否为空
      */
-    public static boolean responseIsEmpty(Object data){
-        return (data == null || data.equals("null") || data.equals("{}") || data.equals("[]"));
+    public static boolean responseIsEmpty(Object data) {
+        return data == null || "null".equals(data.toString()) ||
+               "{}".equals(data.toString()) || "[]".equals(data.toString());
     }
 
     /**
-     * 请求是否正常
-     * 2025/2/20 下午8:47
-     * @author fulin-peng
+     * 检查响应状态是否正常
      */
-    public static boolean responseIsNormal(HttpResponse response){
-        int statusCode = response.getStatusLine().getStatusCode();
-        return responseIsNormal(statusCode);
-    }
-
-    public static boolean responseIsNormal(int  statusCode){
-        return statusCode != HttpStatus.SC_NOT_FOUND && statusCode != HttpStatus.SC_INTERNAL_SERVER_ERROR;
+    public static boolean responseIsNormal(HttpResponse response) {
+        return responseIsNormal(response.getStatusLine().getStatusCode());
     }
 
     /**
-     * 请求类型
-     * 2023/10/15 22:41
-     * @author pengshuaifeng
+     * 检查状态码是否正常
      */
-    public enum RequestType{
+    public static boolean responseIsNormal(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    /**
+     * HTTP请求类型
+     */
+    public enum RequestType {
         GET,
         POST,
-        DELETE
+        PUT,
+        DELETE,
+        PATCH
     }
 
     /**
-     * 请求数据类型
-     * 2023/12/11 00:17
-     * @author pengshuaifeng
+     * MIME类型常量
      */
     public static class MimeType {
         public static final String URL_ENCODED_FORM = "application/x-www-form-urlencoded";
         public static final String APPLICATION_JSON = "application/json";
         public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+        
+        private MimeType() {
+            // Constants class
+        }
     }
 
     /**
-     * 文件响应
-     * 2024/9/12 下午2:03
-     * @author fulin-peng
+     * 文件响应对象
      */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class FileResponse{
+    public static class FileResponse {
         private String fileName;
         private ByteArrayOutputStream content;
     }
-
 }
