@@ -913,6 +913,14 @@ public class DateUtils {
     }
 
     /**
+     * 获取当前时间戳(秒)
+     * @return 当前时间戳
+     */
+    public static long currentTimestamp() {
+        return Instant.now().getEpochSecond();
+    }
+
+    /**
      * 获取当前日期时间
      * 
      * @return 当前日期时间
