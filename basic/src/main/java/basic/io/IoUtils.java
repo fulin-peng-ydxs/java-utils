@@ -126,6 +126,25 @@ public class IoUtils {
         }
     }
 
+    public static ByteArrayInputStream toByteArrayInputStream(InputStream input)
+            throws IOException {
+        return toByteArrayInputStream(input, 0);
+    }
+
+    /**
+     * 将字节数组转换为输入流
+     *
+     * @param input 字节数组
+     * @return ByteArrayInputStream 包含字节数组内容的输入流
+     * @throws IllegalArgumentException 如果字节数组为null
+     */
+    public static ByteArrayInputStream toByteArrayInputStream(byte[] input) {
+        if (input == null) {
+            throw new IllegalArgumentException("字节数组不能为null");
+        }
+        return new ByteArrayInputStream(input);
+    }
+
     /**
      * 将输入流转换为字节数组
      * 
