@@ -671,7 +671,16 @@ public class ClassUtils {
         
         Field field = fields.get(fieldName);
         if (field == null) {
-            field = clazz.getDeclaredField(fieldName);
+            try {
+                field = clazz.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) { // 如果字段不存在则查找父类字段
+                Class<?> superclass = clazz.getSuperclass();
+                if (superclass!=Object.class) {
+                    return getCachedField(superclass, fieldName);
+                }else {
+                    throw e; // 如果父类为Object则抛出异常
+                }
+            }
             fields.put(fieldName, field);
         }
         return field;
