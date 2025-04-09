@@ -621,7 +621,7 @@ public class DateUtils {
      * @param date 日期
      * @return 时间信息对象
      */
-    private static TimeInfo getTimeInfo(Date date) {
+    public static TimeInfo getTimeInfo(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         return new TimeInfo(cal);
@@ -630,15 +630,15 @@ public class DateUtils {
     /**
      * 时间信息类，提供更多时间相关的功能
      */
-    private static class TimeInfo {
+    public static class TimeInfo {
         final int hour;
         final int minute;
         final int second;
         final int month;
         final int year;
         final int day;
-        final int startHourIndex;
-        final int endHourIndex;
+        private   final int startHourIndex;
+        private final int endHourIndex;
 
         TimeInfo(Calendar cal) {
             this.hour = cal.get(Calendar.HOUR_OF_DAY);

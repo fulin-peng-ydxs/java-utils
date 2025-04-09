@@ -34,7 +34,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
-
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -427,7 +426,7 @@ public abstract class HttpClientUtils {
         HttpEntity entity = response.getEntity();
 
         if (responseIsNormal(statusCode) && contentType != null &&
-                contentType.getValue().contains(MimeType.APPLICATION_OCTET_STREAM)) {
+                ( responseIsBinary(contentType.getValue()) || targetType ==FileResponse.class || targetType == ByteArrayOutputStream.class)) {
             return handleBinaryResponse(response, targetType);
         }
 
@@ -531,6 +530,22 @@ public abstract class HttpClientUtils {
      */
     public static boolean responseIsNormal(int statusCode) {
         return statusCode >= 200 && statusCode < 300;
+    }
+
+
+    /**
+     * 检查响应类型为二进制
+     * 2025/3/30 18:58
+     * @author pengshuaifeng
+     * @param  contentType 响应类型
+     */
+    public static boolean responseIsBinary(String contentType) {
+        return contentType != null && (contentType.contains(MimeType.APPLICATION_OCTET_STREAM) ||
+                                       contentType.contains("application/pdf") ||
+                                       contentType.contains("application/zip") ||
+                                       contentType.contains("audio/") ||
+                                       contentType.contains("video/") ||
+                                       contentType.contains("image/"));
     }
 
     /**
