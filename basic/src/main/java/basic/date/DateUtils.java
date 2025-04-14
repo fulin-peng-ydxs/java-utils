@@ -396,6 +396,8 @@ public class DateUtils {
                 return currentTime.plusMonths(amount);
             case YEAR:
                 return currentTime.plusYears(amount);
+            case WEEK:
+                return currentTime.plusWeeks(amount);
             default:
                 throw new IllegalArgumentException("不支持的时间单位: " + dateUnitType);
         }
@@ -631,12 +633,12 @@ public class DateUtils {
      * 时间信息类，提供更多时间相关的功能
      */
     public static class TimeInfo {
-        final int hour;
-        final int minute;
-        final int second;
-        final int month;
-        final int year;
-        final int day;
+        public final int hour;
+        public final int minute;
+        public final int second;
+        public final int month;
+        public final int year;
+        public final int day;
         private   final int startHourIndex;
         private final int endHourIndex;
 
@@ -776,6 +778,21 @@ public class DateUtils {
             .atZone(ZoneId.systemDefault())
             .toInstant());
     }
+
+    /**
+     * Date转LocalDate
+     * 2025/4/10 18:56
+     * @author pengshuaifeng
+     */
+    public static LocalDate dateToLocalDate(Date date) {
+        if (date == null) {
+            return null;
+        }
+        return date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+
 
     /**
      * 字符串转Date
@@ -953,7 +970,9 @@ public class DateUtils {
         /** 月 */
         MONTH,
         /** 年 */
-        YEAR
+        YEAR,
+        /**周*/
+        WEEK
     }
 
     /**
@@ -1029,5 +1048,20 @@ public class DateUtils {
             dateToLocalDateTime(startDate).toLocalDate(),
             dateToLocalDateTime(endDate).toLocalDate()
         );
+    }
+
+    /**
+     * 获取当前月份有多少天
+     * 2025/4/10 12:08
+     * @author pengshuaifeng
+     * @param   date 日期
+     * @return 该月份的天数
+     */
+    public static int getDaysInMonth(Date date) {
+        if (date == null) {
+            return 0;
+        }
+        LocalDate localDate = dateToLocalDateTime(date).toLocalDate();
+        return localDate.lengthOfMonth();
     }
 }
