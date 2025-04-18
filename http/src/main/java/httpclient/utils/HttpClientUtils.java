@@ -425,8 +425,8 @@ public abstract class HttpClientUtils {
         Header contentType = response.getFirstHeader("Content-Type");
         HttpEntity entity = response.getEntity();
 
-        if (responseIsNormal(statusCode) && contentType != null &&
-                ( responseIsBinary(contentType.getValue()) || targetType ==FileResponse.class || targetType == ByteArrayOutputStream.class)) {
+        if (responseIsNormal(statusCode) && contentType != null && !MimeType.responseIsJson(contentType.getValue()) &&
+                ( MimeType.responseIsBinary(contentType.getValue()) || targetType ==FileResponse.class || targetType == ByteArrayOutputStream.class)) {
             return handleBinaryResponse(response, targetType);
         }
 
@@ -473,7 +473,10 @@ public abstract class HttpClientUtils {
                 }
             }
         }
-
+        Header contentType = response.getFirstHeader("Content-Type");
+        if (contentType != null) {
+            fileResponse.setContentType(contentType.getValue());
+        }
         return (T) fileResponse;
     }
 
@@ -534,21 +537,6 @@ public abstract class HttpClientUtils {
 
 
     /**
-     * 检查响应类型为二进制
-     * 2025/3/30 18:58
-     * @author pengshuaifeng
-     * @param  contentType 响应类型
-     */
-    public static boolean responseIsBinary(String contentType) {
-        return contentType != null && (contentType.contains(MimeType.APPLICATION_OCTET_STREAM) ||
-                                       contentType.contains("application/pdf") ||
-                                       contentType.contains("application/zip") ||
-                                       contentType.contains("audio/") ||
-                                       contentType.contains("video/") ||
-                                       contentType.contains("image/"));
-    }
-
-    /**
      * HTTP请求类型
      */
     public enum RequestType {
@@ -566,9 +554,39 @@ public abstract class HttpClientUtils {
         public static final String URL_ENCODED_FORM = "application/x-www-form-urlencoded";
         public static final String APPLICATION_JSON = "application/json";
         public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
-        
+
+        public static final String APPLICATION_PDF = "application/pdf";
+        public static final String APPLICATION_ZIP = "application/zip";
+
         private MimeType() {
             // Constants class
+        }
+
+        /**
+         * 检查响应类型为二进制
+         * 2025/3/30 18:58
+         *
+         * @param contentType 响应类型
+         * @author pengshuaifeng
+         */
+        public static boolean responseIsBinary(String contentType) {
+            return contentType != null && (contentType.contains(MimeType.APPLICATION_OCTET_STREAM) ||
+                    contentType.contains(MimeType.APPLICATION_PDF) ||
+                    contentType.contains(MimeType.APPLICATION_ZIP) ||
+                    contentType.contains("audio/") ||
+                    contentType.contains("video/") ||
+                    contentType.contains("image/"));
+        }
+
+        /**
+         * 检查响应类型为json
+         * 2025/4/18 11:38
+         *
+         * @param contentType 响应类型
+         * @author pengshuaifeng
+         */
+        public static boolean responseIsJson(String contentType) {
+            return contentType != null && (contentType.contains(MimeType.APPLICATION_JSON));
         }
     }
 
@@ -580,6 +598,7 @@ public abstract class HttpClientUtils {
     @AllArgsConstructor
     public static class FileResponse {
         private String fileName;
+        private String contentType;
         private ByteArrayOutputStream content;
     }
 }
